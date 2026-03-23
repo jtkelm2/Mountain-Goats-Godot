@@ -1,0 +1,101 @@
+extends RefCounted
+## DiceRolling gamestate: animates dice rolling and waits for click to stop.
+
+var ps  # PlayState reference
+var pause_input: bool = true
+var rolling_locale: GridLocale = null
+var dice_roller: Sprite2D = null
+var gamestate_tag: String = Reg.GS_DICE_ROLLING
+
+
+func _init(play_state) -> void:
+	ps = play_state
+	var vp_w: float = ps.get_viewport().get_visible_rect().size.x
+	var vp_h: float = ps.get_viewport().get_visible_rect().size.y
+
+	rolling_locale = GridLocale.new(
+		vp_w / 2.0 - 3 * Reg.DIE_SIZE,
+		vp_h / 2.0 - Reg.DIE_SIZE,
+		8.0 * Reg.DIE_SIZE, 2.0 * Reg.DIE_SIZE,
+		1, 4, false
+	)
+	dice_roller = ps.dice_roller_sprite
+	dice_roller.position.x = -vp_w
+	dice_roller.position.y = vp_h / 2.0 - Reg.DIE_SIZE - Reg.SPACING
+
+
+func refresh():
+	GameSystem.mouse_mgr.set_active([])
+	pause_input = true
+	_tray_in()
+	ps.get_tree().create_timer(1.0).timeout.connect(func():
+		_start_rolling()
+	)
+	return self
+
+
+func handle(event: GameEvent) -> void:
+	match event.type:
+		GameEvent.Type.MOUSE_CLICKED:
+			if not pause_input:
+				_stop_rolling()
+				pause_input = true
+		GameEvent.Type.SWITCH_STATE:
+			GameSystem.events.switch_state(event.gamestate_ref, true)
+
+
+func _start_rolling() -> void:
+	var t := 0
+	for die in ps.dice_box.dice:
+		die.start_rolling()
+		var callback := Callable()
+		if t == 3:
+			callback = func(_p):
+				pause_input = false
+				GameSystem.prompt_ai(self)
+		var local_t := t
+		var local_die := die
+		var local_cb := callback
+		ps.get_tree().create_timer(local_t * Reg.MAX_MOVE_TIME * 0.5).timeout.connect(func():
+			rolling_locale.add_piece(local_die, local_cb)
+		)
+		t += 1
+
+
+func _stop_rolling() -> void:
+	var t := 0
+	for die in ps.dice_box.dice:
+		var callback := Callable()
+		if t == 3:
+			callback = func(_p):
+				GameSystem.events.handle(
+					GameEvent.switch_state(GameSystem.events.planning_state)
+				)
+		var local_t := t
+		var local_die := die
+		var local_cb := callback
+		ps.get_tree().create_timer(local_t / 5.0).timeout.connect(func():
+			local_die.stop_rolling(ps.dice_box, local_t, local_cb)
+		)
+		t += 1
+	ps.get_tree().create_timer(3.0).timeout.connect(func():
+		_tray_out()
+	)
+
+
+func _tray_in() -> void:
+	var vp_w: float = ps.get_viewport().get_visible_rect().size.x
+	var tw := ps.create_tween()
+	tw.tween_property(dice_roller, "position:x",
+		vp_w / 2.0 - 3 * Reg.DIE_SIZE - Reg.SPACING, 1.0) \
+		.set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_QUAD)
+
+
+func _tray_out() -> void:
+	var vp_w: float = ps.get_viewport().get_visible_rect().size.x
+	var tw := ps.create_tween()
+	tw.tween_property(dice_roller, "position:x", 2.0 * vp_w, 1.0) \
+		.set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_QUAD)
+	tw.tween_callback(func():
+		dice_roller.position.x = -vp_w
+	)
