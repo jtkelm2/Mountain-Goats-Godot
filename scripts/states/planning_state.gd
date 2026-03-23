@@ -2,7 +2,7 @@ extends RefCounted
 ## Planning gamestate: players assign dice to slots, preview goat movements,
 ## and confirm their turn.
 
-var ps  # PlayState reference
+var ps  # PlayState reference (untyped: loaded at runtime, class resolution unavailable)
 var original_squares: Dictionary = {}  # Goat -> Square
 var original_slots: Dictionary = {}    # Goat -> int
 var movements_confirming: bool = false

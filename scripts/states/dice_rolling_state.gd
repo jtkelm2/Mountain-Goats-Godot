@@ -1,7 +1,7 @@
 extends RefCounted
 ## DiceRolling gamestate: animates dice rolling and waits for click to stop.
 
-var ps  # PlayState reference
+var ps  # PlayState reference (untyped: loaded at runtime, class resolution unavailable)
 var pause_input: bool = true
 var rolling_locale: GridLocale = null
 var dice_roller: Sprite2D = null
@@ -54,7 +54,7 @@ func _start_rolling() -> void:
 				pause_input = false
 				GameSystem.prompt_ai(self)
 		var local_t := t
-		var local_die := die
+		var local_die: Die = die
 		var local_cb := callback
 		ps.get_tree().create_timer(local_t * Reg.MAX_MOVE_TIME * 0.5).timeout.connect(func():
 			rolling_locale.add_piece(local_die, local_cb)
@@ -72,7 +72,7 @@ func _stop_rolling() -> void:
 					GameEvent.switch_state(GameSystem.events.planning_state)
 				)
 		var local_t := t
-		var local_die := die
+		var local_die: Die = die
 		var local_cb := callback
 		ps.get_tree().create_timer(local_t / 5.0).timeout.connect(func():
 			local_die.stop_rolling(ps.dice_box, local_t, local_cb)
@@ -85,7 +85,7 @@ func _stop_rolling() -> void:
 
 func _tray_in() -> void:
 	var vp_w: float = ps.get_viewport().get_visible_rect().size.x
-	var tw := ps.create_tween()
+	var tw: Tween = ps.create_tween()
 	tw.tween_property(dice_roller, "position:x",
 		vp_w / 2.0 - 3 * Reg.DIE_SIZE - Reg.SPACING, 1.0) \
 		.set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_QUAD)
@@ -93,7 +93,7 @@ func _tray_in() -> void:
 
 func _tray_out() -> void:
 	var vp_w: float = ps.get_viewport().get_visible_rect().size.x
-	var tw := ps.create_tween()
+	var tw: Tween = ps.create_tween()
 	tw.tween_property(dice_roller, "position:x", 2.0 * vp_w, 1.0) \
 		.set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_QUAD)
 	tw.tween_callback(func():

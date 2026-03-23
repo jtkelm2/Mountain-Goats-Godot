@@ -1,7 +1,7 @@
 extends RefCounted
 ## Gameover gamestate: game stops accepting moves.
 
-var ps
+var ps  # PlayState reference (untyped: loaded at runtime, class resolution unavailable)
 var gamestate_tag: String = Reg.GS_GAMEOVER
 
 

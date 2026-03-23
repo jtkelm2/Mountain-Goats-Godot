@@ -1,3 +1,4 @@
+class_name PlayState
 extends Node2D
 ## Main game scene. Sets up the board, goats, dice, tokens, scoreboards.
 

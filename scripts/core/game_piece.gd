@@ -3,7 +3,7 @@ extends Sprite2D
 ## Base class for movable game pieces (Die, Goat, Token).
 ## Equivalent to the Haxe Gamepiece interface.
 
-var in_locale = null  # Locale reference
+var in_locale: Locale = null
 var is_moving: bool = false
 var teleport_mode: bool = true
 var origin: Vector2 = Vector2.ZERO  # Rotation/drag center offset

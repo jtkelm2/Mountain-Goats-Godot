@@ -39,7 +39,7 @@ var angle: float = 0.0:
 					piece.rotation_degrees += angle_diff
 		angle = new_angle
 
-var pieces: Array = []
+var pieces: Array[GamePiece] = []
 var autoupdate: bool = true
 
 

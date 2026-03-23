@@ -2,9 +2,9 @@ class_name DiceBox
 extends Sprite2D
 ## The dice box with four slots. Manages die placement and validates moves.
 
-var locales: Array = []  # Array of GridLocale, one per slot
+var locales: Array[GridLocale] = []
 var query_region: QueryRegion = null
-var dice: Array = []  # Array of Die
+var dice: Array[Die] = []
 var slot_counts: Array[int] = [0, 0, 0, 0]
 var one_count: int = 0
 var origin: Vector2 = Vector2.ZERO
