@@ -25,6 +25,7 @@ func setup(sx: float, sy: float, sq_type: int, mtn: int, mtn_height: int,
 	mountain = mtn
 	mountain_height = mtn_height
 	centered = false
+	z_index = Reg.Z_SQUARE
 
 	load_spritesheet_manual("res://assets/square.png", Reg.SQUARE_SIZE, Reg.SQUARE_SIZE)
 

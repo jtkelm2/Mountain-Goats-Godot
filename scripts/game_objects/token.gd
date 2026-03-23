@@ -13,6 +13,7 @@ func setup(tx: float, ty: float, kind: int, n: int) -> void:
 	awarded = false
 	is_moving = false
 	teleport_mode = true
+	z_index = Reg.Z_TOKEN
 
 	if kind == Reg.TokenKind.MOUNTAIN:
 		token_kind = Reg.TokenKind.MOUNTAIN

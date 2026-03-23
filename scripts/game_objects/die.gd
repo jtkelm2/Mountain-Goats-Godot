@@ -15,6 +15,7 @@ func setup() -> void:
 	currently_rolling = false
 	teleport_mode = true
 	is_moving = false
+	z_index = Reg.Z_DIE
 	GameSystem.mouse_mgr.init_clickable(self, Reg.TAG_DIE)
 
 

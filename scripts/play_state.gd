@@ -42,11 +42,13 @@ func _init_bg() -> void:
 	var bg := Sprite2D.new()
 	bg.texture = load("res://assets/bg.png")
 	bg.centered = false
+	bg.z_index = Reg.Z_BG
 	add_child(bg)
 
 
 func _init_move_confirm_button() -> void:
 	move_confirm_button = MoveConfirmButton.new()
+	move_confirm_button.z_index = Reg.Z_UI
 	move_confirm_button.setup(
 		Reg.MOVE_CONFIRM_X, Reg.MOVE_CONFIRM_Y,
 		func():
@@ -113,6 +115,7 @@ func _init_scoreboards() -> void:
 
 func _init_scoreboard(player: int) -> void:
 	var sb := Scoreboard.new()
+	sb.z_index = Reg.Z_SCOREBOARD
 	add_child(sb)
 	sb.setup(player)
 	scoreboards[player] = sb
@@ -122,9 +125,11 @@ func _init_dice_box() -> void:
 	dice_roller_sprite = Sprite2D.new()
 	dice_roller_sprite.texture = load("res://assets/diceroller.png")
 	dice_roller_sprite.centered = false
+	dice_roller_sprite.z_index = Reg.Z_DICE_BOX
 	add_child(dice_roller_sprite)
 
 	dice_box = DiceBox.new()
+	dice_box.z_index = Reg.Z_DICE_BOX
 	add_child(dice_box)
 	dice_box.setup(Reg.DICEBOX_X, Reg.DICEBOX_Y, self)
 

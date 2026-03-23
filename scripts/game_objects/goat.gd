@@ -10,6 +10,7 @@ func setup(p: int, starting_square) -> void:
 	load_spritesheet("res://assets/goat.png", Reg.GOAT_SIZE, Reg.GOAT_SIZE)
 	frame = p
 	player = p
+	z_index = Reg.Z_GOAT
 	teleport_mode = true
 	starting_square.add_goat(self)
 	teleport_mode = false

@@ -130,13 +130,17 @@ func award(token: Token) -> void:
 
 
 func _award_mountain_token(token: Token, mountain: int) -> void:
+	token.z_index = Reg.Z_DRAGGED
 	await token_locales[mountain].insert_piece(token, 0)
+	token.z_index = Reg.Z_TOKEN
 	token.awarded = true
 	_update_scores()
 
 
 func _award_bonus_token(token: Token) -> void:
+	token.z_index = Reg.Z_DRAGGED
 	await _bonus_token_locale.add_piece(token)
+	token.z_index = Reg.Z_TOKEN
 	token.awarded = true
 	token.fade_out()
 	_update_scores()

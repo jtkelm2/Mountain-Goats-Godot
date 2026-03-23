@@ -1,6 +1,18 @@
 extends Node
 ## Global constants and layout values. Autoloaded as "Reg".
 
+# Z-index layers — explicit draw order for all visual objects.
+# Objects with the same layer sort by scene-tree order (earlier = below).
+const Z_BG        := 0  # background image
+const Z_SCOREBOARD := 1  # panel, rank sprite, score label (and awarded tokens via z_as_relative)
+const Z_SQUARE    := 2  # board squares and their GridLocale children
+const Z_TOKEN     := 3  # mountain tokens (stacked above mountaintops) and bonus tokens
+const Z_GOAT      := 4  # player goat pieces
+const Z_DICE_BOX  := 5  # dice box sprite + dice roller tray
+const Z_DIE       := 6  # dice (in box, rolling, or dragged to slot)
+const Z_UI        := 7  # move confirm button
+const Z_DRAGGED   := 8  # any piece currently being dragged, or token in flight to scoreboard
+
 # Tags for mouse management
 const TAG_GOAT := "goat"
 const TAG_DIE := "die"
