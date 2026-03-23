@@ -1,60 +1,39 @@
 class_name Locale
-extends RefCounted
+extends Node2D
 ## Abstract base for positioning containers. Tracks an array of GamePiece
 ## references and computes target positions for them.
-
-var x: float = 0.0:
-	set(new_x):
-		if pieces != null:
-			var dx := new_x - x
-			for piece in pieces:
-				if piece != null:
-					piece.position.x += dx
-		x = new_x
-
-var y: float = 0.0:
-	set(new_y):
-		if pieces != null:
-			var dy := new_y - y
-			for piece in pieces:
-				if piece != null:
-					piece.position.y += dy
-		y = new_y
+## Extends Node2D so position/rotation are managed by the scene tree;
+## subclasses compute slot positions via to_global() and override
+## update_positions().
 
 var width: float = 0.0
 var height: float = 0.0
-
-var angle: float = 0.0:
-	set(new_angle):
-		if pieces != null:
-			var mid := get_midpoint()
-			var angle_diff := new_angle - angle
-			for piece in pieces:
-				if piece != null:
-					var old_mid := piece.get_midpoint()
-					var new_mid := old_mid
-					new_mid = _pivot_degrees(new_mid, mid, angle_diff)
-					piece.position.x += new_mid.x - old_mid.x
-					piece.position.y += new_mid.y - old_mid.y
-					piece.rotation_degrees += angle_diff
-		angle = new_angle
 
 var pieces: Array[GamePiece] = []
 var autoupdate: bool = true
 
 
 func get_midpoint() -> Vector2:
-	return Vector2(x + width / 2.0, y + height / 2.0)
+	return to_global(Vector2(width / 2.0, height / 2.0))
 
 
 # Abstract - override in subclasses
-func get_position_for_slot(slot: int) -> Vector2:
+func get_position_for_slot(_slot: int) -> Vector2:
 	return Vector2.ZERO
 
 
 # Abstract - override in subclasses
-func update_positions(callback: Callable = Callable()) -> void:
+func update_positions(_callback: Callable = Callable()) -> void:
 	pass
+
+
+## Immediately reposition all pieces to match current world transform.
+## Call this after the parent node moves or rotates.
+func update_positions_immediate() -> void:
+	for i in range(pieces.size()):
+		if pieces[i] != null:
+			pieces[i].position = get_position_for_slot(i)
+			pieces[i].rotation_degrees = global_rotation_degrees
 
 
 func add_piece(piece: GamePiece, callback: Callable = Callable()):
@@ -124,14 +103,3 @@ func get_slot(gamepiece: GamePiece):
 	if result == -1:
 		return null
 	return result
-
-
-static func _pivot_degrees(point: Vector2, pivot: Vector2, degrees: float) -> Vector2:
-	var radians := deg_to_rad(degrees)
-	var rel := point - pivot
-	var cos_a := cos(radians)
-	var sin_a := sin(radians)
-	return Vector2(
-		pivot.x + rel.x * cos_a - rel.y * sin_a,
-		pivot.y + rel.x * sin_a + rel.y * cos_a
-	)

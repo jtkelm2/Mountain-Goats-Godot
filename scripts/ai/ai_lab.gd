@@ -6,7 +6,7 @@ extends RefCounted
 
 ## Returns a random move.
 static func random_ai() -> Callable:
-	return func(gs: Dictionary, moves: Array) -> Dictionary:
+	return func(_gs: Dictionary, moves: Array) -> Dictionary:
 		return moves[randi() % moves.size()]
 
 

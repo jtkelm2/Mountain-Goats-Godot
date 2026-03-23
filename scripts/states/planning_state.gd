@@ -1,21 +1,21 @@
-extends RefCounted
+class_name PlanningState
+extends GameState
 ## Planning gamestate: players assign dice to slots, preview goat movements,
 ## and confirm their turn.
 
-var ps  # PlayState reference (untyped: loaded at runtime, class resolution unavailable)
 var original_squares: Dictionary = {}  # Goat -> Square
 var original_slots: Dictionary = {}    # Goat -> int
 var movements_confirming: bool = false
 var first_move_made: bool = false
 var movements: Dictionary = {}  # mountain(int) -> int
-var gamestate_tag: String = Reg.GS_PLANNING
 
 
-func _init(play_state) -> void:
+func _init(play_state: PlayState) -> void:
 	ps = play_state
+	gamestate_tag = Reg.GS_PLANNING
 
 
-func refresh():
+func refresh() -> GameState:
 	movements = {}
 	for mountain in range(5, 11):
 		movements[mountain] = 0
@@ -64,9 +64,7 @@ func handle(event: GameEvent) -> void:
 			_check_first_move()
 			movements[event.int_value] += 1
 			_judge_movements()
-			ps.get_tree().create_timer(1.0).timeout.connect(func():
-				GameSystem.events.next()
-			)
+			_advance_goat_wait()
 
 
 func _handle_mouse_down(obj) -> void:
@@ -80,9 +78,8 @@ func _handle_mouse_down(obj) -> void:
 			GameSystem.mouse_mgr.set_active([Reg.TAG_SQUARE])
 
 	elif obj is Token:
-		var query_result = ps.mountaintop_query_region.query()
-		if query_result != null:
-			var mountaintop_clicked: int = query_result + 5
+		if obj.token_kind == Reg.TokenKind.MOUNTAIN:
+			var mountaintop_clicked: int = obj.token_mountain
 			var goat = ps.goats[ps.current_player][mountaintop_clicked]
 			if goat.square.square_type == Reg.SquareType.MOUNTAINTOP:
 				for token in goat.square.tokens:
@@ -109,8 +106,8 @@ func _handle_dragger_dropped(obj) -> void:
 	elif obj is Die:
 		var hovered = GameSystem.mouse_mgr.hovered
 		if hovered is DiceBox:
-			var slot = hovered.query_region.query()
-			if slot == null:
+			var slot: int = hovered.get_slot_at_mouse()
+			if slot < 0:
 				obj.in_locale.update_positions()
 			else:
 				hovered.to_slot(slot, obj)
@@ -131,14 +128,17 @@ func _handle_movements_confirmed() -> void:
 		ps.goats[ps.current_player][mountain].toggle_preview(false)
 		mountain_resolving_wait = maxf(_resolve_mountaintop(mountain), mountain_resolving_wait)
 
-	ps.get_tree().create_timer(mountain_resolving_wait).timeout.connect(func():
-		var bonus_wait := _resolve_bonus_tokens()
-		ps.get_tree().create_timer(bonus_wait).timeout.connect(func():
-			ps.check_for_game_end()
-			ps.update_ranks()
-			ps.next_player()
-		)
-	)
+	await get_tree().create_timer(mountain_resolving_wait).timeout
+	var bonus_wait := _resolve_bonus_tokens()
+	await get_tree().create_timer(bonus_wait).timeout
+	ps.check_for_game_end()
+	ps.update_ranks()
+	ps.next_player()
+
+
+func _advance_goat_wait() -> void:
+	await get_tree().create_timer(1.0).timeout
+	GameSystem.events.next()
 
 
 func _is_valid_drop(goat: Goat, square: Square):

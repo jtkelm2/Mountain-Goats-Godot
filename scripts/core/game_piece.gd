@@ -14,8 +14,8 @@ func load_spritesheet(path: String, frame_width: int, frame_height: int = 0) -> 
 	centered = false
 	if frame_height == 0:
 		frame_height = frame_width
-	hframes = maxi(1, int(texture.get_width() / frame_width))
-	vframes = maxi(1, int(texture.get_height() / frame_height))
+	hframes = maxi(1, int(float(texture.get_width()) / frame_width))
+	vframes = maxi(1, int(float(texture.get_height()) / frame_height))
 	origin = Vector2(frame_width / 2.0, frame_height / 2.0)
 
 

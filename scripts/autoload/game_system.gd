@@ -2,7 +2,7 @@ extends Node
 ## Global game system singleton. Autoloaded as "GameSystem".
 ## Holds references to all subsystems and the main scene.
 
-var ps = null  # Main scene (PlayState equivalent)
+var ps = null  # PlayState — untyped: autoload is parsed before PlayState is known
 
 var events: Events = null
 var dragger: Dragger = null

@@ -14,8 +14,8 @@ func setup(bx: float, by: float, cb: Callable) -> void:
 	position = Vector2(bx, by)
 	centered = false
 	texture = load("res://assets/moveconfirm.png")
-	hframes = maxi(1, int(texture.get_width() / Reg.MOVE_CONFIRM_WIDTH))
-	vframes = maxi(1, int(texture.get_height() / Reg.MOVE_CONFIRM_HEIGHT))
+	hframes = maxi(1, int(float(texture.get_width()) / Reg.MOVE_CONFIRM_WIDTH))
+	vframes = maxi(1, int(float(texture.get_height()) / Reg.MOVE_CONFIRM_HEIGHT))
 	origin = Vector2(Reg.MOVE_CONFIRM_WIDTH / 2.0, Reg.MOVE_CONFIRM_HEIGHT / 2.0)
 	_callback = cb
 	modulate.a = 0.0

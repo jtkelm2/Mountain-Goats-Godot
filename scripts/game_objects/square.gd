@@ -34,18 +34,21 @@ func setup(sx: float, sy: float, sq_type: int, mtn: int, mtn_height: int,
 	match sq_type:
 		Reg.SquareType.MOUNTAINTOP:
 			has_locale = GridLocale.new(
-				sx + Reg.SQUARE_SIZE / 2.0 - Reg.GOAT_SIZE / 2.0,
-				sy + Reg.SQUARE_SIZE / 2.0 - Reg.GOAT_SIZE / 2.0,
+				Reg.SQUARE_SIZE / 2.0 - Reg.GOAT_SIZE / 2.0,
+				Reg.SQUARE_SIZE / 2.0 - Reg.GOAT_SIZE / 2.0,
 				1.5 * Reg.GOAT_SIZE, 0, 1, 2)
+			add_child(has_locale)
 			_init_tokens(sx, sy, main_scene)
 		Reg.SquareType.MOUNTAIN:
 			has_locale = GridLocale.new(
-				sx + locale_spacing, sy + locale_spacing,
+				locale_spacing, locale_spacing,
 				2.0 * dist_between, 2.0 * dist_between, 2, 2)
+			add_child(has_locale)
 		Reg.SquareType.MOUNTAIN_FOOT:
 			has_locale = GridLocale.new(
-				sx + locale_spacing, sy + locale_spacing,
+				locale_spacing, locale_spacing,
 				2.0 * dist_between, 2.0 * dist_between, 2, 2)
+			add_child(has_locale)
 
 	# Set animation frame based on mountain and height
 	match mountain:
@@ -62,8 +65,8 @@ func setup(sx: float, sy: float, sq_type: int, mtn: int, mtn_height: int,
 func load_spritesheet_manual(path: String, frame_w: int, frame_h: int) -> void:
 	texture = load(path)
 	centered = false
-	hframes = maxi(1, int(texture.get_width() / frame_w))
-	vframes = maxi(1, int(texture.get_height() / frame_h))
+	hframes = maxi(1, int(float(texture.get_width()) / frame_w))
+	vframes = maxi(1, int(float(texture.get_height()) / frame_h))
 	origin = Vector2(frame_w / 2.0, frame_h / 2.0)
 
 
@@ -96,17 +99,19 @@ func _init_tokens(sx: float, sy: float, main_scene: Node) -> void:
 		main_scene.add_child(token)
 
 	_free_token_locale = GridLocale.new(
-		sx, sy - Reg.TOKEN_SIZE,
+		0, -Reg.TOKEN_SIZE,
 		Reg.SQUARE_SIZE - Reg.TOKEN_SIZE, Reg.TOKEN_SIZE,
 		1, tokens.size()
 	)
+	add_child(_free_token_locale)
 	for token in tokens:
 		_free_token_locale.add_piece(token)
 		token.teleport_mode = false
 
 	_previewed_token_locale = GridLocale.new(
-		sx, sy, Reg.SQUARE_SIZE, Reg.TOKEN_SIZE, 1, 4
+		0, 0, Reg.SQUARE_SIZE, Reg.TOKEN_SIZE, 1, 4
 	)
+	add_child(_previewed_token_locale)
 	previewed_tokens = []
 
 

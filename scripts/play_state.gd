@@ -9,7 +9,6 @@ var scoreboards: Dictionary = {}  # int(player) -> Scoreboard
 var dice_box: DiceBox = null
 var dice_roller_sprite: Sprite2D = null
 var move_confirm_button: MoveConfirmButton = null
-var mountaintop_query_region: QueryRegion = null
 var bonus_tokens: Array = []
 var _bonus_token_locale: Locale = null
 var _bonus_tokens_awarded: int = 0
@@ -61,9 +60,6 @@ func _init_move_confirm_button() -> void:
 
 func _init_board() -> void:
 	var x_pos: int = Reg.BOARD_X
-	mountaintop_query_region = QueryRegion.new().add_region_grid(
-		x_pos, Reg.BOARD_Y, 6 * Reg.SQUARE_SIZE, Reg.TOKEN_SIZE, 1, 6
-	)
 	for mountain in range(5, 11):
 		mountains[mountain] = []
 
@@ -120,7 +116,7 @@ func _init_scoreboards() -> void:
 func _init_scoreboard(player: int) -> void:
 	var sb := Scoreboard.new()
 	add_child(sb)
-	sb.setup(player, self)
+	sb.setup(player)
 	scoreboards[player] = sb
 
 
@@ -145,6 +141,7 @@ func _init_tokens() -> void:
 		2.0 * Reg.TOKEN_SIZE, roundi(1.25 * Reg.TOKEN_SIZE),
 		4, 1, true, 2
 	)
+	add_child(_bonus_token_locale)
 	_bonus_tokens_awarded = 0
 
 	for k in range(4):

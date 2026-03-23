@@ -3,7 +3,6 @@ extends Sprite2D
 ## The dice box with four slots. Manages die placement and validates moves.
 
 var locales: Array[GridLocale] = []
-var query_region: QueryRegion = null
 var dice: Array[Die] = []
 var slot_counts: Array[int] = [0, 0, 0, 0]
 var one_count: int = 0
@@ -20,21 +19,16 @@ func setup(bx: float, by: float, main_scene: Node) -> void:
 	texture = load("res://assets/dicebox.png")
 	origin = Vector2(texture.get_width() / 2.0, texture.get_height() / 2.0)
 
-	query_region = QueryRegion.new().add_region_grid(
-		bx + Reg.SPACING, by + Reg.SPACING,
-		4 * Reg.DIE_SIZE, 4 * Reg.DIE_SIZE,
-		1, 4
-	)
-
 	locales = []
 	dice = []
 	for i in range(4):
 		var loc := GridLocale.new(
-			bx + i * Reg.DIE_SIZE + Reg.SPACING,
-			by + Reg.SPACING,
+			i * Reg.DIE_SIZE + Reg.SPACING,
+			Reg.SPACING,
 			Reg.DIE_SIZE, 4.0 * Reg.DIE_SIZE,
 			4, 1
 		)
+		add_child(loc)
 		locales.append(loc)
 		var die := _init_die(i, main_scene)
 		dice.append(die)
@@ -49,6 +43,14 @@ func _init_die(slot: int, main_scene: Node) -> Die:
 	to_slot(slot, die)
 	die.teleport_mode = false
 	return die
+
+
+func get_slot_at_mouse() -> int:
+	var local_mouse := to_local(get_viewport().get_mouse_position())
+	var slot := int((local_mouse.x - Reg.SPACING) / Reg.DIE_SIZE)
+	if local_mouse.x < Reg.SPACING or slot >= 4:
+		return -1
+	return slot
 
 
 func get_midpoint() -> Vector2:

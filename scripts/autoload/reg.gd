@@ -53,8 +53,8 @@ var MAX_MOVE_TIME: float
 
 
 func init_reg() -> void:
-	var vp_w: int = get_viewport().get_visible_rect().size.x
-	var vp_h: int = get_viewport().get_visible_rect().size.y
+	var vp_w: int = int(get_viewport().get_visible_rect().size.x)
+	var vp_h: int = int(get_viewport().get_visible_rect().size.y)
 
 	SPACING = 9
 

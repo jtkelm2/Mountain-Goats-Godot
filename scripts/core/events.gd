@@ -6,12 +6,12 @@ extends RefCounted
 enum NextType { AUTO_NEXT, MANUAL_NEXT }
 
 var _queue: Array[Dictionary] = []  # [{type: NextType, event: GameEvent}]
-var _current_gamestate = null  # Current state handler (duck-typed)
-var ps  # Reference to main scene (PlayState equivalent)
+var _current_gamestate = null  # GameState
+var ps = null  # PlayState
 
-var planning_state = null
-var dice_rolling_state = null
-var gameover_state = null
+var planning_state = null    # PlanningState
+var dice_rolling_state = null  # DiceRollingState
+var gameover_state = null    # GameoverState
 
 ## Convenience callable: pass as a callback to trigger next() when an
 ## animation / tween finishes.
@@ -24,12 +24,12 @@ func _init(play_state) -> void:
 
 
 func init_gamestate() -> void:
-	var DiceRollingState = load("res://scripts/states/dice_rolling_state.gd")
-	var PlanningState = load("res://scripts/states/planning_state.gd")
-	var GameoverState = load("res://scripts/states/gameover_state.gd")
 	planning_state = PlanningState.new(ps)
+	ps.add_child(planning_state)
 	dice_rolling_state = DiceRollingState.new(ps)
+	ps.add_child(dice_rolling_state)
 	gameover_state = GameoverState.new(ps)
+	ps.add_child(gameover_state)
 	_current_gamestate = dice_rolling_state.refresh()
 
 

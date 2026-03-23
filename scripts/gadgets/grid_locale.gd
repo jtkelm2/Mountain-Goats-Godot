@@ -1,6 +1,10 @@
 class_name GridLocale
 extends Locale
 ## Positions pieces in a grid layout.
+## position is LOCAL to the parent node (world position when parent has no
+## transform, e.g. PlayState). get_position_for_slot() converts to world coords
+## via to_global(), so all callers receive world-space positions regardless of
+## where this node sits in the hierarchy.
 
 var grid_cols: int
 var grid_rows: int
@@ -9,17 +13,15 @@ var starting_corner: int  # 0=top-left, 1=top-right, 2=bottom-left, 3=bottom-rig
 
 func _init(lx: float, ly: float, lw: float, lh: float,
 		g_rows: int, g_cols: int, auto: bool = true, corner: int = 0) -> void:
-	x = lx
-	y = ly
+	position = Vector2(lx, ly)
 	width = lw
 	height = lh
 	grid_cols = g_cols
 	grid_rows = g_rows
 	starting_corner = corner
 	autoupdate = auto
-	pieces = []
-	for _i in range(g_cols * g_rows):
-		pieces.append(null)
+	pieces.clear()
+	pieces.resize(g_cols * g_rows)
 
 
 func get_position_for_slot(slot: int) -> Vector2:
@@ -29,10 +31,11 @@ func get_position_for_slot(slot: int) -> Vector2:
 	var col: int = col_dir * (slot % grid_cols)
 	@warning_ignore("integer_division")
 	var row: int = row_dir * (slot / grid_cols)
-	return Vector2(
-		x + (float(col) / grid_cols) * width,
-		y + (float(row) / grid_rows) * height
+	var local_pos := Vector2(
+		(float(col) / grid_cols) * width,
+		(float(row) / grid_rows) * height
 	)
+	return to_global(local_pos)
 
 
 func update_positions(callback: Callable = Callable()) -> void:

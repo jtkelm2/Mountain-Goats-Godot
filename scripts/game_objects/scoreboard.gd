@@ -1,6 +1,8 @@
 class_name Scoreboard
-extends Sprite2D
+extends Node2D
 ## Player scoreboard panel that rotates around the board edges.
+## Extends Node2D so that rank_sprite, score_label, and token locales are all
+## children and rotate/translate automatically when this node moves.
 
 var turn_order: int = 0
 var rank_sprite: Sprite2D = null
@@ -9,26 +11,25 @@ var token_locales: Dictionary = {}  # mountain -> Locale
 var bonus_tokens_awarded: int = 0
 var _bonus_token_locale: Locale = null
 var score_label: Label = null
-var _anchor: RotationAnchor = null
 var player: int = 0
-var origin: Vector2 = Vector2.ZERO
+
+var _panel: Sprite2D = null
 
 
 func _init() -> void:
 	pass
 
 
-func setup(p: int, main_scene: Node) -> void:
+func setup(p: int) -> void:
 	player = p
-	centered = false
-	texture = load("res://assets/panel.png")
-	hframes = maxi(1, int(texture.get_width() / Reg.PANEL_WIDTH))
-	vframes = maxi(1, int(texture.get_height() / Reg.PANEL_HEIGHT))
-	frame = player
-	origin = Vector2(Reg.PANEL_WIDTH / 2.0, Reg.PANEL_HEIGHT / 2.0)
 
-	_anchor = RotationAnchor.new(origin.x, origin.y)
-	_anchor.add_obj(self)
+	_panel = Sprite2D.new()
+	_panel.texture = load("res://assets/panel.png")
+	_panel.centered = false
+	_panel.hframes = maxi(1, int(float(_panel.texture.get_width()) / Reg.PANEL_WIDTH))
+	_panel.vframes = maxi(1, int(float(_panel.texture.get_height()) / Reg.PANEL_HEIGHT))
+	_panel.frame = player
+	add_child(_panel)
 
 	turn_order = 0
 	tokens_raw = {}
@@ -36,62 +37,61 @@ func setup(p: int, main_scene: Node) -> void:
 		tokens_raw[i] = 0
 	bonus_tokens_awarded = 0
 
-	_init_rank(main_scene)
-	_init_score(main_scene)
+	_init_rank()
+	_init_score()
 	_init_locales()
 	rotate_board(4 - player)
 
 
+## Returns the world-space center of the panel.
 func get_midpoint() -> Vector2:
-	return Vector2(position.x + origin.x, position.y + origin.y)
+	return to_global(Vector2(Reg.PANEL_WIDTH / 2.0, Reg.PANEL_HEIGHT / 2.0))
 
 
-func _init_rank(main_scene: Node) -> void:
+func _init_rank() -> void:
 	rank_sprite = Sprite2D.new()
 	rank_sprite.texture = load("res://assets/rank.png")
 	rank_sprite.centered = false
-	rank_sprite.hframes = maxi(1, int(rank_sprite.texture.get_width() / Reg.RANK_SIZE))
+	rank_sprite.hframes = maxi(1, int(float(rank_sprite.texture.get_width()) / Reg.RANK_SIZE))
 	rank_sprite.vframes = 1
 	rank_sprite.position = Vector2(
-		position.x + Reg.PANEL_WIDTH - Reg.RANK_SIZE,
-		position.y + Reg.SPACING
+		Reg.PANEL_WIDTH - Reg.RANK_SIZE,
+		Reg.SPACING
 	)
-	_anchor.add_obj(rank_sprite)
-	main_scene.add_child(rank_sprite)
+	add_child(rank_sprite)
 
 
-func _init_score(main_scene: Node) -> void:
+func _init_score() -> void:
 	score_label = Label.new()
 	score_label.position = Vector2(
-		position.x + Reg.PANEL_WIDTH - Reg.RANK_SIZE,
-		position.y + Reg.PANEL_HEIGHT - Reg.TOKEN_SIZE
+		Reg.PANEL_WIDTH - Reg.RANK_SIZE,
+		Reg.PANEL_HEIGHT - Reg.TOKEN_SIZE
 	)
 	score_label.text = "0"
 	score_label.add_theme_font_size_override("font_size", roundi(0.8 * Reg.TOKEN_SIZE))
 	score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	score_label.custom_minimum_size = Vector2(Reg.RANK_SIZE, 0)
-	_anchor.add_obj(score_label)
-	main_scene.add_child(score_label)
+	add_child(score_label)
 
 
 func _init_locales() -> void:
 	token_locales = {}
 	for mountain in range(5, 11):
 		var loc := GridLocale.new(
-			position.x + Reg.SPACING + (mountain - 5) * Reg.TOKEN_SIZE,
-			position.y + Reg.SPACING - 1,
+			Reg.SPACING + (mountain - 5) * Reg.TOKEN_SIZE,
+			Reg.SPACING - 1,
 			Reg.TOKEN_SIZE,
 			2.0 * (Reg.PANEL_HEIGHT - Reg.TOKEN_SIZE),
 			12, 1
 		)
 		token_locales[mountain] = loc
-		_anchor.add_obj(loc)
+		add_child(loc)
 
 	_bonus_token_locale = GridLocale.new(
 		score_label.position.x, score_label.position.y,
 		0, 0, 4, 1, false
 	)
-	_anchor.add_obj(_bonus_token_locale)
+	add_child(_bonus_token_locale)
 
 
 func change_rank(new_rank: int) -> void:
@@ -99,13 +99,24 @@ func change_rank(new_rank: int) -> void:
 
 
 func rotate_board(times: int) -> void:
-	turn_order = (turn_order - times + 400) % 4  # +400 to avoid negative mod
+	turn_order = (turn_order - times + 400) % 4
 
-	var old_mid := get_midpoint()
-	var new_mid: Vector2 = Reg.PANEL_PLACEMENTS[turn_order]
-	_anchor.anchor_x += new_mid.x - old_mid.x
-	_anchor.anchor_y += new_mid.y - old_mid.y
-	_anchor.anchor_angle += 90.0 * times
+	# Place the panel center at the target world position with the correct rotation.
+	# PANEL_PLACEMENTS stores world-space center points for each turn_order.
+	var target_center: Vector2 = Reg.PANEL_PLACEMENTS[turn_order]
+	var target_rotation := deg_to_rad((4 - turn_order) % 4 * 90.0)
+
+	rotation = target_rotation
+	# After rotation, the local panel-center offset is rotated, so subtract it
+	# from the target world center to find the correct node origin position.
+	var local_center := Vector2(Reg.PANEL_WIDTH / 2.0, Reg.PANEL_HEIGHT / 2.0)
+	global_position = target_center - local_center.rotated(target_rotation)
+
+	# Pieces in locales are children of PlayState (world space), not of this node,
+	# so they don't rotate automatically. Snap them to their new world positions.
+	for loc: Locale in token_locales.values():
+		loc.update_positions_immediate()
+	_bonus_token_locale.update_positions_immediate()
 
 
 func award(token: Token) -> void:
