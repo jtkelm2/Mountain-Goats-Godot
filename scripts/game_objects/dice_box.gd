@@ -9,10 +9,6 @@ var one_count: int = 0
 var origin: Vector2 = Vector2.ZERO
 
 
-func _init() -> void:
-	pass
-
-
 func setup(bx: float, by: float, main_scene: Node) -> void:
 	position = Vector2(bx, by)
 	centered = false
@@ -57,10 +53,10 @@ func get_midpoint() -> Vector2:
 	return Vector2(position.x + origin.x, position.y + origin.y)
 
 
-func to_slot(slot: int, die: Die, callback: Callable = Callable()) -> void:
-	locales[slot].add_piece(die, callback)
+func to_slot(slot: int, die: Die) -> void:
 	die.slot = slot
 	update_slot_values()
+	await locales[slot].add_piece(die)
 
 
 func update_slot_values() -> void:

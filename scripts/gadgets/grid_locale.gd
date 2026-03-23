@@ -38,13 +38,20 @@ func get_position_for_slot(slot: int) -> Vector2:
 	return to_global(local_pos)
 
 
-func update_positions(callback: Callable = Callable()) -> void:
+func update_positions() -> void:
 	if autoupdate:
 		pieces = pieces.filter(func(p): return p != null)
 		while pieces.size() < grid_cols * grid_rows:
 			pieces.append(null)
 
+	# Fire all moves simultaneously (move_to is fire-and-forget here),
+	# then await each piece's `moved` signal sequentially.
+	# Since tweens run in parallel, total wait ≈ max(individual durations).
+	var moving := []
 	for i in range(pieces.size()):
 		if pieces[i] != null:
 			var new_pos := get_position_for_slot(i)
-			pieces[i].move_to(new_pos.x, new_pos.y, callback)
+			moving.append(pieces[i])
+			pieces[i].move_to(new_pos.x, new_pos.y)
+	for piece in moving:
+		await piece.moved

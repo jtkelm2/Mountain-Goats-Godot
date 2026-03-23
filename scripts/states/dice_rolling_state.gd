@@ -1,13 +1,16 @@
 class_name DiceRollingState
-extends GameState
+extends "res://scripts/core/game_state.gd"
 ## DiceRolling gamestate: animates dice rolling and waits for click to stop.
 
 var pause_input: bool = true
 var rolling_locale: GridLocale = null
 var dice_roller: Sprite2D = null
 
+signal _all_settled
+var _pending: int = 0
 
-func _init(play_state: PlayState) -> void:
+
+func _init(play_state) -> void:
 	ps = play_state
 	gamestate_tag = Reg.GS_DICE_ROLLING
 	var vp_w: float = ps.get_viewport().get_visible_rect().size.x
@@ -25,7 +28,7 @@ func _init(play_state: PlayState) -> void:
 	dice_roller.position.y = vp_h / 2.0 - Reg.DIE_SIZE - Reg.SPACING
 
 
-func refresh() -> GameState:
+func refresh():
 	GameSystem.mouse_mgr.set_active([])
 	pause_input = true
 	_tray_in()
@@ -33,7 +36,7 @@ func refresh() -> GameState:
 	return self
 
 
-func handle(event: GameEvent) -> void:
+func handle(event) -> void:
 	match event.type:
 		GameEvent.Type.MOUSE_CLICKED:
 			if not pause_input:
@@ -49,40 +52,47 @@ func _start_rolling_after_delay() -> void:
 
 
 func _start_rolling() -> void:
-	var t := 0
 	for die in ps.dice_box.dice:
 		die.start_rolling()
-		var callback := Callable()
-		if t == 3:
-			callback = func(_p):
-				pause_input = false
-				GameSystem.prompt_ai(self)
-		var local_t := t
-		var local_die: Die = die
-		var local_cb := callback
-		get_tree().create_timer(local_t * Reg.MAX_MOVE_TIME * 0.5).timeout.connect(func():
-			rolling_locale.add_piece(local_die, local_cb)
-		)
-		t += 1
+
+	# Stagger each die into the rolling locale in parallel.
+	# _add_die_after_delay decrements _pending and emits _all_settled when done.
+	_pending = ps.dice_box.dice.size()
+	for t in range(ps.dice_box.dice.size()):
+		_add_die_after_delay(ps.dice_box.dice[t], t)
+	await _all_settled
+
+	pause_input = false
+	GameSystem.prompt_ai(self)
+
+
+func _add_die_after_delay(die: Die, t: int) -> void:
+	await get_tree().create_timer(t * Reg.MAX_MOVE_TIME * 0.5).timeout
+	await rolling_locale.add_piece(die)
+	_pending -= 1
+	if _pending == 0:
+		_all_settled.emit()
 
 
 func _stop_rolling() -> void:
-	var t := 0
-	for die in ps.dice_box.dice:
-		var callback := Callable()
-		if t == 3:
-			callback = func(_p):
-				GameSystem.events.handle(
-					GameEvent.switch_state(GameSystem.events.planning_state)
-				)
-		var local_t := t
-		var local_die: Die = die
-		var local_cb := callback
-		get_tree().create_timer(local_t / 5.0).timeout.connect(func():
-			local_die.stop_rolling(ps.dice_box, local_t, local_cb)
-		)
-		t += 1
-	_tray_out_after_delay()
+	# Stagger each die's stop animation in parallel, then switch state.
+	_pending = ps.dice_box.dice.size()
+	for t in range(ps.dice_box.dice.size()):
+		_stop_die_after_delay(ps.dice_box.dice[t], t)
+	await _all_settled
+
+	GameSystem.events.handle(
+		GameEvent.switch_state(GameSystem.events.planning_state)
+	)
+	_tray_out()
+
+
+func _stop_die_after_delay(die: Die, slot: int) -> void:
+	await get_tree().create_timer(slot / 5.0).timeout
+	await die.stop_rolling(ps.dice_box, slot)
+	_pending -= 1
+	if _pending == 0:
+		_all_settled.emit()
 
 
 func _tray_in() -> void:
@@ -91,11 +101,6 @@ func _tray_in() -> void:
 	tw.tween_property(dice_roller, "position:x",
 		vp_w / 2.0 - 3 * Reg.DIE_SIZE - Reg.SPACING, 1.0) \
 		.set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_QUAD)
-
-
-func _tray_out_after_delay() -> void:
-	await get_tree().create_timer(3.0).timeout
-	_tray_out()
 
 
 func _tray_out() -> void:

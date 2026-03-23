@@ -6,11 +6,14 @@ var ps = null  # PlayState — untyped: autoload is parsed before PlayState is k
 
 var events: Events = null
 var dragger: Dragger = null
-var effects: Effects = null
 var mouse_mgr: MouseManager = null
-var players: Dictionary = {}  # int -> {type: "human"} or {type: "ai", ai: AIManager}
+var players: Array = []  # Array[Player]
 
 enum PlayerType { HUMAN, AI }
+
+class Player:
+	var type: int
+	var ai = null  # AIManager or null
 
 
 func init_system(play_state) -> void:
@@ -22,8 +25,6 @@ func init_system(play_state) -> void:
 
 	dragger = Dragger.new()
 	ps.add_child(dragger)
-	effects = Effects.new()
-	ps.add_child(effects)
 	mouse_mgr = MouseManager.new()
 	ps.add_child(mouse_mgr)
 	events = Events.new(ps)
@@ -36,15 +37,18 @@ func _init_ai(play_state) -> void:
 	var AILabScript = load("res://scripts/ai/ai_lab.gd")
 	var ai_func: Callable = AILabScript.handcraft_score_ai()
 
-	players = {
-		0: {"type": PlayerType.HUMAN},
-		1: {"type": PlayerType.AI, "ai": AIManagerScript.new(play_state, ai_func)},
-		2: {"type": PlayerType.AI, "ai": AIManagerScript.new(play_state, ai_func)},
-		3: {"type": PlayerType.AI, "ai": AIManagerScript.new(play_state, ai_func)},
-	}
+	var human := Player.new()
+	human.type = PlayerType.HUMAN
+	players = [human]
+
+	for _i in range(3):
+		var p := Player.new()
+		p.type = PlayerType.AI
+		p.ai = AIManagerScript.new(play_state, ai_func)
+		players.append(p)
 
 
 func prompt_ai(gamestate) -> void:
-	var player_info: Dictionary = players[ps.current_player]
+	var player_info: Player = players[ps.current_player]
 	if player_info.type == PlayerType.AI:
 		player_info.ai.on_prompt(gamestate)

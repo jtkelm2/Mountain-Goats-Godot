@@ -8,10 +8,6 @@ var token_bonus_value: int = 0  # For BONUS tokens: point value
 var awarded: bool = false
 
 
-func _init() -> void:
-	pass
-
-
 func setup(tx: float, ty: float, kind: int, n: int) -> void:
 	position = Vector2(tx, ty)
 	awarded = false
@@ -44,4 +40,4 @@ func token_value() -> int:
 
 
 func toggle_preview(enabled: bool) -> void:
-	GameSystem.effects.toggle_transparing(self, enabled)
+	toggle_transparing(enabled)

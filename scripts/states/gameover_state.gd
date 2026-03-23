@@ -1,17 +1,17 @@
 class_name GameoverState
-extends GameState
+extends "res://scripts/core/game_state.gd"
 ## Gameover gamestate: game stops accepting moves.
 
 
-func _init(play_state: PlayState) -> void:
+func _init(play_state) -> void:
 	ps = play_state
 	gamestate_tag = Reg.GS_GAMEOVER
 
 
-func refresh() -> GameState:
+func refresh():
 	GameSystem.mouse_mgr.set_active([])
 	return self
 
 
-func handle(_event: GameEvent) -> void:
+func handle(_event) -> void:
 	pass

@@ -1,5 +1,5 @@
 class_name PlanningState
-extends GameState
+extends "res://scripts/core/game_state.gd"
 ## Planning gamestate: players assign dice to slots, preview goat movements,
 ## and confirm their turn.
 
@@ -10,12 +10,12 @@ var first_move_made: bool = false
 var movements: Dictionary = {}  # mountain(int) -> int
 
 
-func _init(play_state: PlayState) -> void:
+func _init(play_state) -> void:
 	ps = play_state
 	gamestate_tag = Reg.GS_PLANNING
 
 
-func refresh() -> GameState:
+func refresh():
 	movements = {}
 	for mountain in range(5, 11):
 		movements[mountain] = 0
@@ -29,7 +29,7 @@ func refresh() -> GameState:
 	return self
 
 
-func handle(event: GameEvent) -> void:
+func handle(event) -> void:
 	match event.type:
 		GameEvent.Type.MOUSE_DOWN:
 			_handle_mouse_down(event.object)
@@ -57,14 +57,13 @@ func handle(event: GameEvent) -> void:
 
 		GameEvent.Type.AI_PLACE_DIE:
 			GameSystem.mouse_mgr.set_active([])
-			ps.dice_box.to_slot(event.int_value, event.die_ref,
-				GameSystem.events.next_callback)
+			await ps.dice_box.to_slot(event.int_value, event.die_ref)
 
 		GameEvent.Type.AI_ADVANCE_GOAT:
 			_check_first_move()
 			movements[event.int_value] += 1
 			_judge_movements()
-			_advance_goat_wait()
+			await get_tree().create_timer(1.0).timeout
 
 
 func _handle_mouse_down(obj) -> void:
@@ -134,11 +133,6 @@ func _handle_movements_confirmed() -> void:
 	ps.check_for_game_end()
 	ps.update_ranks()
 	ps.next_player()
-
-
-func _advance_goat_wait() -> void:
-	await get_tree().create_timer(1.0).timeout
-	GameSystem.events.next()
 
 
 func _is_valid_drop(goat: Goat, square: Square):
@@ -215,5 +209,5 @@ func _award_bonus_tokens(quantity: int) -> float:
 
 func _check_first_move() -> void:
 	if not first_move_made:
-		GameSystem.effects.fade_in(ps.move_confirm_button)
+		ps.move_confirm_button.fade_in()
 		first_move_made = true

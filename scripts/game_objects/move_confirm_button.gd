@@ -4,10 +4,7 @@ extends Sprite2D
 
 var origin: Vector2 = Vector2.ZERO
 var _callback: Callable = Callable()
-
-
-func _init() -> void:
-	pass
+var _fade_tween: Tween = null
 
 
 func setup(bx: float, by: float, cb: Callable) -> void:
@@ -36,6 +33,22 @@ func setup(bx: float, by: float, cb: Callable) -> void:
 			if modulate.a > 0.1 and _callback.is_valid():
 				_callback.call()
 	)
+
+
+func fade_in() -> void:
+	if _fade_tween is Tween:
+		_fade_tween.kill()
+	modulate.a = 0.0
+	_fade_tween = create_tween()
+	_fade_tween.tween_property(self, "modulate:a", 1.0, 1.0)
+
+
+func fade_out() -> void:
+	if _fade_tween is Tween:
+		_fade_tween.kill()
+	modulate.a = 1.0
+	_fade_tween = create_tween()
+	_fade_tween.tween_property(self, "modulate:a", 0.0, 1.0)
 
 
 func get_midpoint() -> Vector2:

@@ -16,10 +16,6 @@ var player: int = 0
 var _panel: Sprite2D = null
 
 
-func _init() -> void:
-	pass
-
-
 func setup(p: int) -> void:
 	player = p
 
@@ -123,21 +119,27 @@ func award(token: Token) -> void:
 	if token.token_kind == Reg.TokenKind.MOUNTAIN:
 		var mountain: int = token.token_mountain
 		token.toggle_preview(false)
-		token_locales[mountain].insert_piece(token, 0, func(_p):
-			token.awarded = true
-			_update_scores()
-		)
 		tokens_raw[mountain] += 1
+		_award_mountain_token(token, mountain)  # fire-and-forget
 	else:  # BONUS
 		var n: int = token.token_bonus_value
 		token.toggle_preview(false)
-		_bonus_token_locale.add_piece(token, func(_p):
-			token.awarded = true
-			GameSystem.effects.fade_out(token)
-			_update_scores()
-		)
 		tokens_raw[11] += n
 		bonus_tokens_awarded += 1
+		_award_bonus_token(token)  # fire-and-forget
+
+
+func _award_mountain_token(token: Token, mountain: int) -> void:
+	await token_locales[mountain].insert_piece(token, 0)
+	token.awarded = true
+	_update_scores()
+
+
+func _award_bonus_token(token: Token) -> void:
+	await _bonus_token_locale.add_piece(token)
+	token.awarded = true
+	token.fade_out()
+	_update_scores()
 
 
 func _update_scores() -> void:

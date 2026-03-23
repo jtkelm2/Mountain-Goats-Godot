@@ -15,9 +15,9 @@ var dragged:
 			var mouse_pos := get_viewport().get_mouse_position()
 			new_val.position.x += mouse_pos.x - (new_val.position.x + new_val.origin.x)
 			new_val.position.y += mouse_pos.y - (new_val.position.y + new_val.origin.y)
-			GameSystem.effects.transpare(new_val)
+			(new_val as GamePiece).transpare()
 		elif old_val != null:
-			GameSystem.effects.detranspare(old_val)
+			(old_val as GamePiece).detranspare()
 			GameSystem.events.handle(GameEvent.dragger_dropped(old_val))
 
 

@@ -6,10 +6,6 @@ var square = null  # Current Square reference
 var player: int = 0
 
 
-func _init() -> void:
-	pass
-
-
 func setup(p: int, starting_square) -> void:
 	load_spritesheet("res://assets/goat.png", Reg.GOAT_SIZE, Reg.GOAT_SIZE)
 	frame = p
@@ -26,4 +22,4 @@ func get_tag() -> String:
 
 
 func toggle_preview(enabled: bool) -> void:
-	GameSystem.effects.toggle_transparing(self, enabled)
+	toggle_transparing(enabled)

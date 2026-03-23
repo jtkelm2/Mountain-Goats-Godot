@@ -30,14 +30,12 @@ func _ready() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventKey and event.pressed:
-		if event.keycode == KEY_SPACE:
-			get_tree().reload_current_scene()
-		elif event.keycode == KEY_ALT:
-			Engine.time_scale = 20.0
-	elif event is InputEventKey and not event.pressed:
-		if event.keycode == KEY_ALT:
-			Engine.time_scale = 1.0
+	if event.is_action_pressed("reload"):
+		get_tree().reload_current_scene()
+	elif event.is_action_pressed("fast_forward"):
+		Engine.time_scale = 20.0
+	elif event.is_action_released("fast_forward"):
+		Engine.time_scale = 1.0
 
 
 func _init_bg() -> void:
@@ -181,7 +179,7 @@ func next_player() -> void:
 	else:
 		next_state = GameSystem.events.dice_rolling_state
 
-	GameSystem.effects.fade_out(move_confirm_button)
+	move_confirm_button.fade_out()
 	GameSystem.events.queue(GameEvent.switch_state(next_state))
 
 

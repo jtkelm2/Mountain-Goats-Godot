@@ -6,9 +6,9 @@ var ps = null  # PlayState — untyped to avoid circular parse-time dependency
 var gamestate_tag: String = ""
 
 
-func refresh() -> GameState:
+func refresh():
 	return self
 
 
-func handle(_event: GameEvent) -> void:
+func handle(_event) -> void:
 	pass

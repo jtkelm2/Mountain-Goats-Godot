@@ -82,8 +82,8 @@ func add_goat(goat) -> void:
 		has_locale.add_piece(goat)
 
 
-func insert_goat(goat, slot: int, callback: Callable = Callable()) -> void:
-	has_locale.insert_piece(goat, slot, callback)
+func insert_goat(goat, slot: int) -> void:
+	has_locale.insert_piece(goat, slot)
 	goat.square = self
 
 

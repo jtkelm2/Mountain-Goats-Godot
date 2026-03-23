@@ -1,11 +1,9 @@
 class_name Events
 extends RefCounted
-## Discrete event queue with AutoNext / ManualNext resolution.
-## Core architecture for sequencing game actions and animations.
+## Discrete event queue. Each queued event is handled by the current gamestate
+## and the queue advances automatically after handle() returns (or awaits).
 
-enum NextType { AUTO_NEXT, MANUAL_NEXT }
-
-var _queue: Array[Dictionary] = []  # [{type: NextType, event: GameEvent}]
+var _queue: Array = []  # Array[GameEvent]
 var _current_gamestate = null  # GameState
 var ps = null  # PlayState
 
@@ -13,30 +11,24 @@ var planning_state = null    # PlanningState
 var dice_rolling_state = null  # DiceRollingState
 var gameover_state = null    # GameoverState
 
-## Convenience callable: pass as a callback to trigger next() when an
-## animation / tween finishes.
-var next_callback: Callable
-
 
 func _init(play_state) -> void:
 	ps = play_state
-	next_callback = func(_piece): next()
 
 
 func init_gamestate() -> void:
-	planning_state = PlanningState.new(ps)
+	planning_state = load("res://scripts/states/planning_state.gd").new(ps)
 	ps.add_child(planning_state)
-	dice_rolling_state = DiceRollingState.new(ps)
+	dice_rolling_state = load("res://scripts/states/dice_rolling_state.gd").new(ps)
 	ps.add_child(dice_rolling_state)
-	gameover_state = GameoverState.new(ps)
+	gameover_state = load("res://scripts/states/gameover_state.gd").new(ps)
 	ps.add_child(gameover_state)
 	_current_gamestate = dice_rolling_state.refresh()
 
 
-func _wrapped_handle(entry: Dictionary) -> void:
-	_current_gamestate.handle(entry.event)
-	if entry.type == NextType.AUTO_NEXT:
-		next()
+func _wrapped_handle(event: GameEvent) -> void:
+	await _current_gamestate.handle(event)
+	next()
 
 
 ## Fire an event directly to the current gamestate (bypasses queue).
@@ -45,20 +37,14 @@ func handle(event: GameEvent) -> void:
 
 
 ## Enqueue an event. If the queue was empty, handle it immediately.
-## Set autonext=false for events whose resolution depends on an
-## asynchronous callback (e.g. a tween finishing).
-func queue(event: GameEvent, autonext: bool = true) -> void:
-	var entry := {
-		"type": NextType.AUTO_NEXT if autonext else NextType.MANUAL_NEXT,
-		"event": event,
-	}
-	_queue.push_back(entry)
+## The queue advances automatically after the gamestate's handle() returns.
+func queue(event: GameEvent) -> void:
+	_queue.push_back(event)
 	if _queue.size() == 1:
-		_wrapped_handle(entry)
+		_wrapped_handle(event)
 
 
-## Advance to the next queued event. Call this from tween callbacks
-## when using ManualNext events.
+## Advance to the next queued event. Called automatically by _wrapped_handle.
 func next() -> void:
 	if _queue.size() > 0:
 		_queue.pop_front()

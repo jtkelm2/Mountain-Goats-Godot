@@ -9,10 +9,6 @@ var currently_rolling: bool = false
 var _roll_timer: float = 0.0
 
 
-func _init() -> void:
-	pass
-
-
 func setup() -> void:
 	load_spritesheet("res://assets/die.png", Reg.DIE_SIZE, Reg.DIE_SIZE)
 	roll()
@@ -49,23 +45,19 @@ func start_rolling() -> void:
 	currently_rolling = true
 
 
-func stop_rolling(dice_box, target_slot: int,
-		callback: Callable = Callable()) -> void:
+func stop_rolling(dice_box, target_slot: int) -> void:
 	var cur_y := position.y
-	var on_complete := func():
-		currently_rolling = false
-		GameSystem.ps.get_tree().create_timer(1.5).timeout.connect(func():
-			dice_box.to_slot(target_slot, self, callback)
-		)
-
-	var tw := GameSystem.effects.create_tween()
+	var tw := create_tween()
 	tw.tween_property(self, "scale", Vector2(1.8, 1.8), 0.3)
 	tw.parallel().tween_property(self, "position:y", cur_y - Reg.DIE_SIZE * 2, 0.3)
 	tw.tween_property(self, "scale", Vector2(1.0, 1.0), 0.5) \
 		.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_EXPO)
 	tw.parallel().tween_property(self, "position:y", cur_y, 0.5) \
 		.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_EXPO)
-	tw.tween_callback(on_complete)
+	await tw.finished
+	currently_rolling = false
+	await get_tree().create_timer(1.5).timeout
+	await dice_box.to_slot(target_slot, self)
 
 
 func change_wild(delta: int, dice_box) -> bool:
@@ -83,4 +75,4 @@ func change_wild(delta: int, dice_box) -> bool:
 
 
 func toggle_reserve(enabled: bool) -> void:
-	GameSystem.effects.toggle_transparing(self, enabled)
+	toggle_transparing(enabled)

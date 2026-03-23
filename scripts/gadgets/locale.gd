@@ -22,9 +22,9 @@ func get_position_for_slot(_slot: int) -> Vector2:
 	return Vector2.ZERO
 
 
-# Abstract - override in subclasses
-func update_positions(_callback: Callable = Callable()) -> void:
-	pass
+# Abstract coroutine — override in subclasses with actual animation logic.
+func update_positions() -> void:
+	await get_tree().process_frame
 
 
 ## Immediately reposition all pieces to match current world transform.
@@ -36,41 +36,30 @@ func update_positions_immediate() -> void:
 			pieces[i].rotation_degrees = global_rotation_degrees
 
 
-func add_piece(piece: GamePiece, callback: Callable = Callable()):
+func add_piece(piece: GamePiece) -> void:
 	if piece not in pieces:
 		for i in range(pieces.size()):
 			if pieces[i] == null:
-				return insert_piece(piece, i, callback)
+				await insert_piece(piece, i)
+				return
 	else:
-		var new_cb := Callable()
-		if callback.is_valid():
-			new_cb = func(other_piece):
-				if other_piece == piece:
-					callback.call(piece)
-		update_positions(new_cb)
-	return null
+		await update_positions()
 
 
-func insert_piece(piece: GamePiece, i: int, callback: Callable = Callable()):
+func insert_piece(piece: GamePiece, i: int) -> void:
 	if null not in pieces:
-		return null
+		return
 
 	if piece.in_locale != null:
 		piece.in_locale.remove_piece(piece)
 	piece.in_locale = self
 
-	var new_cb := Callable()
-	if callback.is_valid():
-		new_cb = func(other_piece):
-			if other_piece == piece:
-				callback.call(piece)
-
 	if pieces[i] == null:
 		pieces[i] = piece
 		if not autoupdate:
 			var pos := get_position_for_slot(i)
-			piece.move_to(pos.x, pos.y, callback)
-			return i
+			await piece.move_to(pos.x, pos.y)
+			return
 	else:
 		pieces.insert(i, piece)
 		# Remove one null to keep array the same size
@@ -78,24 +67,22 @@ func insert_piece(piece: GamePiece, i: int, callback: Callable = Callable()):
 		if null_idx != -1:
 			pieces.remove_at(null_idx)
 
-	update_positions(new_cb)
-	return i
+	await update_positions()
 
 
-func vacate(slot: int, callback: Callable = Callable()) -> GamePiece:
+func vacate(slot: int) -> GamePiece:
 	var vacated = pieces[slot]
 	pieces[slot] = null
 	if autoupdate:
-		update_positions(callback)
+		update_positions()  # fire-and-forget
 	return vacated
 
 
-func remove_piece(gamepiece: GamePiece, callback: Callable = Callable()):
+func remove_piece(gamepiece: GamePiece) -> void:
 	for i in range(pieces.size()):
 		if pieces[i] == gamepiece:
-			vacate(i, callback)
-			return i
-	return null
+			vacate(i)
+			return
 
 
 func get_slot(gamepiece: GamePiece):
