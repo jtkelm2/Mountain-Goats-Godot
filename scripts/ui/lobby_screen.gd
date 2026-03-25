@@ -30,19 +30,9 @@ func _build_ui() -> void:
 	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 
-	var scroll := ScrollContainer.new()
-	scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	add_child(scroll)
-
-	var outer := VBoxContainer.new()
-	outer.add_theme_constant_override("separation", 20)
-	outer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.add_child(outer)
-
-	# Center content horizontally
 	var center := CenterContainer.new()
-	center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	outer.add_child(center)
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(center)
 
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 14)
