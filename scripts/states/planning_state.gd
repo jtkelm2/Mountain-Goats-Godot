@@ -26,10 +26,23 @@ func refresh():
 	movements_confirming = false
 	first_move_made = false
 	GameSystem.mouse_mgr.set_active([Reg.TAG_GOAT, Reg.TAG_DIE, Reg.TAG_TOKEN])
+
+	if GameConfig.online_mode and ps.current_player != GameConfig.local_player_index:
+		# Spectator mode: receive opponent's planning updates.
+		ps.remote_planning_received.connect(_apply_remote_planning)
+		ps.remote_turn_confirmed.connect(_on_remote_turn_confirmed, CONNECT_ONE_SHOT)
+
 	return self
 
 
 func handle(event) -> void:
+	# During online mode, ignore all input when it is not the local player's turn.
+	if GameConfig.online_mode and ps.current_player != GameConfig.local_player_index:
+		if event.type == GameEvent.Type.SWITCH_STATE:
+			_disconnect_remote_signals()
+			GameSystem.events.switch_state(event.gamestate_ref)
+		return
+
 	match event.type:
 		GameEvent.Type.MOUSE_DOWN:
 			_handle_mouse_down(event.object)
@@ -132,6 +145,9 @@ func _handle_movements_confirmed() -> void:
 	await get_tree().create_timer(bonus_wait).timeout
 	ps.check_for_game_end()
 	ps.update_ranks()
+	# Emit turn_ended before advancing player (current_player still identifies the active player).
+	if GameConfig.online_mode:
+		ps.turn_ended.emit(_build_planning_snapshot())
 	ps.next_player()
 
 
@@ -160,6 +176,10 @@ func _judge_movements() -> void:
 			goat.toggle_preview(true)
 		else:
 			_cancel_drop(goat)
+
+	# Broadcast planning state to opponent.
+	if GameConfig.online_mode and ps.current_player == GameConfig.local_player_index:
+		ps.planning_updated.emit(_build_planning_snapshot())
 
 
 func _cancel_drop(goat: Goat) -> void:
@@ -209,5 +229,57 @@ func _award_bonus_tokens(quantity: int) -> float:
 
 func _check_first_move() -> void:
 	if not first_move_made:
-		ps.move_confirm_button.fade_in()
+		# Don't show the confirm button when spectating an opponent's turn.
+		if not (GameConfig.online_mode and ps.current_player != GameConfig.local_player_index):
+			ps.move_confirm_button.fade_in()
 		first_move_made = true
+
+
+# --- Online multiplayer helpers ---
+
+func _build_planning_snapshot() -> Dictionary:
+	return {
+		"dice": ps.dice_box.dice.map(func(d: Die): return {
+			"value": d.value,
+			"is_wild": d.is_wild,
+			"slot": d.slot
+		}),
+		"movements": movements.duplicate()
+	}
+
+
+func _disconnect_remote_signals() -> void:
+	if ps.remote_planning_received.is_connected(_apply_remote_planning):
+		ps.remote_planning_received.disconnect(_apply_remote_planning)
+
+
+func _apply_remote_planning(snapshot: Dictionary) -> void:
+	# Apply die slot/value data (slot is set synchronously before the async animation).
+	var dice_data: Array = snapshot.get("dice", [])
+	for i in range(mini(dice_data.size(), ps.dice_box.dice.size())):
+		var d: Die = ps.dice_box.dice[i]
+		var dd: Dictionary = dice_data[i]
+		d.value = dd.get("value", d.value)
+		d.is_wild = dd.get("is_wild", d.is_wild)
+		d.frame = d.value - 1 if not d.is_wild or d.value == 1 else d.value + 5
+		var new_slot: int = dd.get("slot", d.slot)
+		if d.slot != new_slot:
+			ps.dice_box.to_slot(new_slot, d)  # fire-and-forget animation
+		else:
+			ps.dice_box.update_slot_values()
+
+	# Apply movements dict.
+	var mov: Dictionary = snapshot.get("movements", {})
+	for key in mov:
+		movements[int(key)] = mov[key]
+
+	# Update goat preview positions using the same logic as local planning.
+	_judge_movements()
+
+
+func _on_remote_turn_confirmed(final_state: Dictionary) -> void:
+	_disconnect_remote_signals()
+	# Sync to the authoritative final planning state before resolving.
+	if not final_state.is_empty():
+		_apply_remote_planning(final_state)
+	_handle_movements_confirmed()

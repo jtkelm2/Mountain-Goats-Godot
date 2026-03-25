@@ -23,6 +23,7 @@ config/features=PackedStringArray("4.6")
 Reg="*res://scripts/autoload/reg.gd"
 GameConfig="*res://scripts/autoload/game_config.gd"
 GameSystem="*res://scripts/autoload/game_system.gd"
+NetworkManager="*res://scripts/autoload/network_manager.gd"
 McpInteractionServer="*uid://d2rj7xqle8bu0"
 
 [display]

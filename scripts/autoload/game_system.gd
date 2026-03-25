@@ -9,7 +9,7 @@ var dragger: Dragger = null
 var mouse_mgr: MouseManager = null
 var players: Array = []  # Array[Player]
 
-enum PlayerType { HUMAN, AI }
+enum PlayerType { HUMAN, AI, REMOTE }
 
 class Player:
 	var type: int

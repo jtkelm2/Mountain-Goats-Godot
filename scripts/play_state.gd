@@ -2,6 +2,17 @@ class_name PlayState
 extends Node2D
 ## Main game scene. Sets up the board, goats, dice, tokens, scoreboards.
 
+# --- Online multiplayer signals ---
+# Outbound (game → NetworkReplicator → relay server)
+signal dice_rolled(dice_data: Array)
+signal planning_updated(snapshot: Dictionary)
+signal turn_ended(final_state: Dictionary)
+# Inbound (relay server → NetworkReplicator → game states)
+signal remote_roll_received(dice_data: Array)
+signal remote_planning_received(snapshot: Dictionary)
+signal remote_turn_confirmed(final_state: Dictionary)
+signal opponent_disconnected()
+
 var current_player: int = 0
 var mountains: Dictionary = {}  # int(5-10) -> Array[Square]
 var goats: Dictionary = {}      # int(player) -> {int(mountain): Goat}
@@ -26,6 +37,10 @@ func _ready() -> void:
 	_init_goats()
 	_init_dice_box()
 	_init_tokens()
+	if GameConfig.online_mode:
+		var rep = load("res://scripts/net/network_replicator.gd").new()
+		rep.name = "NetworkReplicator"
+		add_child(rep)
 	GameSystem.events.init_gamestate()
 
 

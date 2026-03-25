@@ -16,10 +16,21 @@ var _tokens_spins: Dictionary = {}  # mountain -> SpinBox
 var _mountains_end_spin: SpinBox = null
 var _bonus_spins: Array = []
 
+# Online multiplayer UI
+var _online_section: Control = null
+var _online_status_label: Label = null
+var _room_code_label: Label = null
+var _join_code_input: LineEdit = null
+var _online_start_btn: Button = null
+var _online_state: String = ""  # "host_waiting", "join_waiting", "connected"
+
 
 func _ready() -> void:
 	_build_ui()
 	_refresh_player_rows()
+	NetworkManager.room_created.connect(_on_room_created)
+	NetworkManager.opponent_connected.connect(_on_opponent_connected)
+	NetworkManager.message_received.connect(_on_network_message)
 
 
 func _build_ui() -> void:
@@ -230,6 +241,8 @@ func _build_nav_buttons(parent: Control) -> void:
 	start_btn.pressed.connect(_on_start_game)
 	hbox.add_child(start_btn)
 
+	_build_online_section(parent)
+
 
 func _on_start_game() -> void:
 	var count := int(_player_count_spin.value)
@@ -253,4 +266,129 @@ func _on_start_game() -> void:
 	for spin in _bonus_spins:
 		GameConfig.bonus_token_values.append(int(spin.value))
 
+	GameConfig.online_mode = false
+	get_tree().change_scene_to_file("res://scenes/main.tscn")
+
+
+# --- Online multiplayer section ---
+
+func _build_online_section(parent: Control) -> void:
+	parent.add_child(HSeparator.new())
+
+	var header := Label.new()
+	header.text = "Play Online"
+	header.add_theme_font_size_override("font_size", 22)
+	header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	parent.add_child(header)
+
+	var btn_row := HBoxContainer.new()
+	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	btn_row.add_theme_constant_override("separation", 16)
+	parent.add_child(btn_row)
+
+	var host_btn := Button.new()
+	host_btn.text = "Host Game"
+	host_btn.pressed.connect(_on_host_pressed)
+	btn_row.add_child(host_btn)
+
+	var join_row := HBoxContainer.new()
+	join_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	join_row.add_theme_constant_override("separation", 8)
+	btn_row.add_child(join_row)
+
+	_join_code_input = LineEdit.new()
+	_join_code_input.placeholder_text = "GOAT-0000"
+	_join_code_input.custom_minimum_size = Vector2(130, 0)
+	join_row.add_child(_join_code_input)
+
+	var join_btn := Button.new()
+	join_btn.text = "Join Game"
+	join_btn.pressed.connect(_on_join_pressed)
+	join_row.add_child(join_btn)
+
+	_online_section = VBoxContainer.new()
+	_online_section.add_theme_constant_override("separation", 8)
+	_online_section.visible = false
+	parent.add_child(_online_section)
+
+	_room_code_label = Label.new()
+	_room_code_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_room_code_label.add_theme_font_size_override("font_size", 20)
+	_online_section.add_child(_room_code_label)
+
+	_online_status_label = Label.new()
+	_online_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_online_section.add_child(_online_status_label)
+
+	_online_start_btn = Button.new()
+	_online_start_btn.text = "Start Online Game"
+	_online_start_btn.add_theme_font_size_override("font_size", 18)
+	_online_start_btn.visible = false
+	_online_start_btn.pressed.connect(_on_online_start_pressed)
+	_online_section.add_child(_online_start_btn)
+
+
+func _on_host_pressed() -> void:
+	_online_section.visible = true
+	_online_status_label.text = "Connecting to relay server…"
+	_room_code_label.text = ""
+	_online_start_btn.visible = false
+	_online_state = "host_waiting"
+	NetworkManager.connect_to_server()
+	await get_tree().create_timer(1.0).timeout
+	NetworkManager.create_room()
+
+
+func _on_join_pressed() -> void:
+	var code := _join_code_input.text.strip_edges().to_upper()
+	if code.is_empty():
+		return
+	_online_section.visible = true
+	_online_status_label.text = "Connecting…"
+	_room_code_label.text = ""
+	_online_start_btn.visible = false
+	_online_state = "join_waiting"
+	NetworkManager.connect_to_server()
+	await get_tree().create_timer(1.0).timeout
+	NetworkManager.join_room(code)
+
+
+func _on_room_created(code: String) -> void:
+	_room_code_label.text = "Room code: %s" % code
+	_online_status_label.text = "Waiting for opponent to join…"
+
+
+func _on_opponent_connected() -> void:
+	if _online_state == "host_waiting":
+		_online_status_label.text = "Opponent connected!"
+		_online_start_btn.visible = true
+	elif _online_state == "join_waiting":
+		_online_status_label.text = "Connected! Waiting for host to start…"
+
+
+func _on_network_message(data: Dictionary) -> void:
+	if data.get("type") == "game_start" and _online_state == "join_waiting":
+		# Host sent game config — apply it and enter the game as joiner.
+		GameConfig.online_mode = true
+		GameConfig.is_host = false
+		GameConfig.local_player_index = 1
+		GameConfig.player_count = 2
+		GameConfig.player_types[0] = GameSystem.PlayerType.REMOTE
+		GameConfig.player_types[1] = GameSystem.PlayerType.HUMAN
+		GameConfig.ai_difficulties[0] = -1
+		GameConfig.ai_difficulties[1] = -1
+		get_tree().change_scene_to_file("res://scenes/main.tscn")
+
+
+func _on_online_start_pressed() -> void:
+	# Host sends game_start to the joiner, then enters the game.
+	NetworkManager.send({"type": "game_start"})
+	GameConfig.online_mode = true
+	GameConfig.is_host = true
+	GameConfig.local_player_index = 0
+	GameConfig.player_count = 2
+	GameConfig.player_types[0] = GameSystem.PlayerType.HUMAN
+	GameConfig.player_types[1] = GameSystem.PlayerType.REMOTE
+	GameConfig.ai_difficulties[0] = -1
+	GameConfig.ai_difficulties[1] = -1
 	get_tree().change_scene_to_file("res://scenes/main.tscn")

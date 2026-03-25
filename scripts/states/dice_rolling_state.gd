@@ -31,6 +31,10 @@ func _init(play_state) -> void:
 func refresh():
 	GameSystem.mouse_mgr.set_active([])
 	pause_input = true
+	if GameConfig.online_mode and ps.current_player != GameConfig.local_player_index:
+		# Opponent's turn: skip rolling animation, wait for their roll result.
+		ps.remote_roll_received.connect(_on_remote_roll_received, CONNECT_ONE_SHOT)
+		return self
 	_tray_in()
 	_start_rolling_after_delay()
 	return self
@@ -81,10 +85,33 @@ func _stop_rolling() -> void:
 		_stop_die_after_delay(ps.dice_box.dice[t], t)
 	await _all_settled
 
+	# Broadcast roll result to opponent.
+	if GameConfig.online_mode:
+		var dice_data: Array = ps.dice_box.dice.map(
+			func(d: Die): return {"value": d.value, "is_wild": d.is_wild}
+		)
+		ps.dice_rolled.emit(dice_data)
+
 	GameSystem.events.handle(
 		GameEvent.switch_state(GameSystem.events.planning_state)
 	)
 	_tray_out()
+
+
+func _on_remote_roll_received(dice_data: Array) -> void:
+	# Apply opponent's roll result and enter planning as spectator.
+	for i in range(mini(dice_data.size(), ps.dice_box.dice.size())):
+		var d: Die = ps.dice_box.dice[i]
+		d.value = dice_data[i]["value"]
+		d.is_wild = dice_data[i]["is_wild"]
+		d.frame = d.value - 1
+		d.currently_rolling = false
+		# Reset die to its original slot (dice start in slots 0-3 after each roll).
+		if d.slot != i:
+			ps.dice_box.to_slot(i, d)  # fire-and-forget animation
+	GameSystem.events.handle(
+		GameEvent.switch_state(GameSystem.events.planning_state)
+	)
 
 
 func _stop_die_after_delay(die: Die, slot: int) -> void:
