@@ -179,7 +179,7 @@ func _resolve_mountaintop(mountain: int) -> float:
 	if goat.square.square_type == Reg.SquareType.MOUNTAINTOP:
 		var mountain_foot = ps.mountains[mountain][0]
 		wait_time = maxf(goat.square.award_tokens(ps.scoreboards[ps.current_player]), wait_time)
-		for other_player in range(4):
+		for other_player in range(GameConfig.player_count):
 			if other_player != ps.current_player:
 				var other_goat = ps.goats[other_player][mountain]
 				if other_goat.square.square_type == Reg.SquareType.MOUNTAINTOP:

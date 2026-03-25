@@ -142,7 +142,7 @@ func _get_gamestate_raw() -> Dictionary:
 	var board := {}
 	for mountain in range(5, 11):
 		board[mountain] = {}
-		for player in range(4):
+		for player in range(GameConfig.player_count):
 			board[mountain][player] = ps.goats[player][mountain].square.mountain_height
 
 	var tokens := {}
@@ -157,7 +157,7 @@ func _get_gamestate_raw() -> Dictionary:
 	bonus_tokens_arr.sort()
 
 	var scoreboards := {}
-	for player in range(4):
+	for player in range(GameConfig.player_count):
 		scoreboards[player] = {}
 		scoreboards[player][11] = 0
 		for mountain in range(5, 11):

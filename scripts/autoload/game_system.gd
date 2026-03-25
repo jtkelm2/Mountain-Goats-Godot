@@ -35,17 +35,24 @@ func init_system(play_state) -> void:
 func _init_ai(play_state) -> void:
 	var AIManagerScript = load("res://scripts/ai/ai_manager.gd")
 	var AILabScript = load("res://scripts/ai/ai_lab.gd")
-	var ai_func: Callable = AILabScript.handcraft_score_ai()
+	players = []
 
-	var human := Player.new()
-	human.type = PlayerType.HUMAN
-	players = [human]
-
-	for _i in range(3):
+	for i in range(GameConfig.player_count):
 		var p := Player.new()
-		p.type = PlayerType.AI
-		p.ai = AIManagerScript.new(play_state, ai_func)
+		p.type = GameConfig.player_types[i]
+		if p.type == PlayerType.AI:
+			p.ai = AIManagerScript.new(play_state, _callable_for_difficulty(AILabScript, GameConfig.ai_difficulties[i]))
 		players.append(p)
+
+
+func _callable_for_difficulty(AILabScript, difficulty: int) -> Callable:
+	match difficulty:
+		GameConfig.AIDifficulty.EASY:
+			return AILabScript.random_ai()
+		GameConfig.AIDifficulty.MEDIUM:
+			return AILabScript.tokenized_weighted_mover_ai()
+		_:  # HARD
+			return AILabScript.handcraft_score_ai()
 
 
 func prompt_ai(gamestate) -> void:

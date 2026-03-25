@@ -7,8 +7,8 @@ Port of the HaxeFlixel Mountain Goats implementation to Godot 4.x (GDScript).
 1. Unzip this project
 2. Copy your original `assets/` folder into `mountain_goats/assets/`
    - Required: `bg.png`, `die.png`, `goat.png`, `square.png`, `token.png`,
-     `bonustoken.png`, `dicebox.png`, `diceroller.png`, `panel.png`,
-     `rank.png`, `moveconfirm.png`
+	 `bonustoken.png`, `dicebox.png`, `diceroller.png`, `panel.png`,
+	 `rank.png`, `moveconfirm.png`
 3. Open the project in Godot 4.3+
 4. Run the scene
 
@@ -68,10 +68,10 @@ Change any player's entry from `AI` to `HUMAN`:
 
 ```gdscript
 players = {
-    0: {"type": PlayerType.HUMAN},
-    1: {"type": PlayerType.HUMAN},  # Now player 2 is also human
-    2: {"type": PlayerType.AI, "ai": AIManagerScript.new(play_state, ai_func)},
-    3: {"type": PlayerType.AI, "ai": AIManagerScript.new(play_state, ai_func)},
+	0: {"type": PlayerType.HUMAN},
+	1: {"type": PlayerType.HUMAN},  # Now player 2 is also human
+	2: {"type": PlayerType.AI, "ai": AIManagerScript.new(play_state, ai_func)},
+	3: {"type": PlayerType.AI, "ai": AIManagerScript.new(play_state, ai_func)},
 }
 ```
 

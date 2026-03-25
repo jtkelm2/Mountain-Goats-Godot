@@ -44,14 +44,14 @@ func update_positions() -> void:
 		while pieces.size() < grid_cols * grid_rows:
 			pieces.append(null)
 
-	# Fire all moves simultaneously (move_to is fire-and-forget here),
-	# then await each piece's `moved` signal sequentially.
-	# Since tweens run in parallel, total wait ≈ max(individual durations).
 	var moving := []
 	for i in range(pieces.size()):
 		if pieces[i] != null:
 			var new_pos := get_position_for_slot(i)
 			moving.append(pieces[i])
 			pieces[i].move_to(new_pos.x, new_pos.y)
-	for piece in moving:
-		await piece.moved
+
+	if moving.is_empty() or not is_inside_tree():
+		return
+	while moving.any(func(p): return p.is_moving):
+		await get_tree().process_frame

@@ -15,12 +15,13 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 [application]
 
 config/name="Mountain Goats"
-run/main_scene="res://scenes/main.tscn"
+run/main_scene="res://scenes/menu.tscn"
 config/features=PackedStringArray("4.6")
 
 [autoload]
 
 Reg="*res://scripts/autoload/reg.gd"
+GameConfig="*res://scripts/autoload/game_config.gd"
 GameSystem="*res://scripts/autoload/game_system.gd"
 McpInteractionServer="*uid://d2rj7xqle8bu0"
 

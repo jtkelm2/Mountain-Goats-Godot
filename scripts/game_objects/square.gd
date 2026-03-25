@@ -90,7 +90,7 @@ func insert_goat(goat, slot: int) -> void:
 
 func _init_tokens(sx: float, sy: float, main_scene: Node) -> void:
 	tokens = []
-	for i in range(17 - mountain):
+	for i in range(GameConfig.tokens_per_mountain[mountain]):
 		var token := Token.new()
 		token.setup(
 			sx + i * Reg.SPACING, sy + i * Reg.SPACING,

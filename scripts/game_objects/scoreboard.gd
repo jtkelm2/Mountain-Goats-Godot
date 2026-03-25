@@ -36,7 +36,7 @@ func setup(p: int) -> void:
 	_init_rank()
 	_init_score()
 	_init_locales()
-	rotate_board(4 - player)
+	rotate_board(GameConfig.player_count - player)
 
 
 ## Returns the world-space center of the panel.
@@ -95,7 +95,7 @@ func change_rank(new_rank: int) -> void:
 
 
 func rotate_board(times: int) -> void:
-	turn_order = (turn_order - times + 400) % 4
+	turn_order = posmod(turn_order - times, GameConfig.player_count)
 
 	# Place the panel center at the target world position with the correct rotation.
 	# PANEL_PLACEMENTS stores world-space center points for each turn_order.

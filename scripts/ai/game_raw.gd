@@ -23,17 +23,17 @@ static func blank_gamestate_raw() -> Dictionary:
 	var scoreboards := {}
 	for mountain in range(5, 11):
 		board[mountain] = {}
-		for player in range(4):
+		for player in range(GameConfig.player_count):
 			board[mountain][player] = 0
-		tokens[mountain] = 17 - mountain
-	for player in range(4):
+		tokens[mountain] = GameConfig.tokens_per_mountain[mountain]
+	for player in range(GameConfig.player_count):
 		scoreboards[player] = {}
 		for i in range(5, 12):
 			scoreboards[player][i] = 0
 	return {
 		"board": board,
 		"tokens": tokens,
-		"bonus_tokens": [6, 9, 12, 15],
+		"bonus_tokens": GameConfig.bonus_token_values.duplicate(),
 		"scoreboards": scoreboards,
 		"player": 0,
 	}
@@ -45,14 +45,14 @@ static func is_over(gs: Dictionary) -> bool:
 		for mountain in range(5, 11):
 			if gs.tokens[mountain] == 0:
 				piles_exhausted += 1
-		return piles_exhausted >= 3 or gs.bonus_tokens.size() == 0
+		return piles_exhausted >= GameConfig.mountains_to_end_game or gs.bonus_tokens.size() == 0
 	return false
 
 
 static func winner(gs: Dictionary) -> int:
 	var best_player := 0
 	var best_score: float = gs.scoreboards[0][11]
-	for p in range(1, 4):
+	for p in range(1, GameConfig.player_count):
 		if gs.scoreboards[p][11] > best_score:
 			best_score = gs.scoreboards[p][11]
 			best_player = p
@@ -62,7 +62,7 @@ static func winner(gs: Dictionary) -> int:
 static func make_move(gs: Dictionary, move: Dictionary) -> Dictionary:
 	for mountain in range(5, 11):
 		_make_mountain_move(gs, mountain, move[mountain])
-	gs.player = (gs.player + 1) % 4
+	gs.player = (gs.player + 1) % GameConfig.player_count
 	return gs
 
 
@@ -70,13 +70,13 @@ static func copy_game(gs: Dictionary) -> Dictionary:
 	var board := {}
 	for mountain in range(5, 11):
 		board[mountain] = {}
-		for player in range(4):
+		for player in range(GameConfig.player_count):
 			board[mountain][player] = gs.board[mountain][player]
 	var tokens := {}
 	for mountain in range(5, 11):
 		tokens[mountain] = gs.tokens[mountain]
 	var scoreboards := {}
-	for player in range(4):
+	for player in range(GameConfig.player_count):
 		scoreboards[player] = {}
 		for i in range(5, 12):
 			scoreboards[player][i] = gs.scoreboards[player][i]
@@ -105,7 +105,7 @@ static func _make_mountain_move(gs: Dictionary, mountain: int, movement: int) ->
 
 
 static func _knock_other_goats_off(gs: Dictionary, mountain: int) -> void:
-	for player in range(4):
+	for player in range(GameConfig.player_count):
 		if player == gs.player:
 			continue
 		if gs.board[mountain][player] == MOUNTAIN_HEIGHTS[mountain]:

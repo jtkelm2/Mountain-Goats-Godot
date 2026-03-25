@@ -94,7 +94,7 @@ func _init_square(sx: int, sy: int, sq_type: int,
 
 func _init_goats() -> void:
 	goats = {}
-	for player in range(4):
+	for player in range(GameConfig.player_count):
 		goats[player] = {}
 		for mountain in range(5, 11):
 			goats[player][mountain] = _init_goat(player, mountains[mountain][0])
@@ -109,7 +109,7 @@ func _init_goat(player: int, square: Square) -> Goat:
 
 func _init_scoreboards() -> void:
 	scoreboards = {}
-	for player in range(4):
+	for player in range(GameConfig.player_count):
 		_init_scoreboard(player)
 
 
@@ -142,15 +142,15 @@ func _init_tokens() -> void:
 	_bonus_token_locale = GridLocale.new(
 		Reg.SPACING, vp_h - Reg.SPACING - Reg.TOKEN_SIZE,
 		2.0 * Reg.TOKEN_SIZE, roundi(1.25 * Reg.TOKEN_SIZE),
-		4, 1, true, 2
+		GameConfig.bonus_token_values.size(), 1, true, 2
 	)
 	add_child(_bonus_token_locale)
 	_bonus_tokens_awarded = 0
 
-	for k in range(4):
+	for k in range(GameConfig.bonus_token_values.size()):
 		var token := Token.new()
 		add_child(token)
-		token.setup(0, 0, Reg.TokenKind.BONUS, 3 * k + 6)
+		token.setup(0, 0, Reg.TokenKind.BONUS, GameConfig.bonus_token_values[k])
 		bonus_tokens.insert(0, token)
 		_bonus_token_locale.insert_piece(token, 0)
 
@@ -170,11 +170,11 @@ func check_for_game_end() -> void:
 		if not token.awarded:
 			all_bonus_awarded = false
 
-	game_ending_this_round = mountains_exhausted >= 4 or all_bonus_awarded
+	game_ending_this_round = mountains_exhausted >= GameConfig.mountains_to_end_game or all_bonus_awarded
 
 
 func next_player() -> void:
-	current_player = (current_player + 1) % 4
+	current_player = (current_player + 1) % GameConfig.player_count
 	for player in scoreboards:
 		scoreboards[player].rotate_board(1)
 
@@ -190,12 +190,12 @@ func next_player() -> void:
 
 func update_ranks() -> void:
 	var total_scores: Array[int] = []
-	for player in range(4):
+	for player in range(GameConfig.player_count):
 		total_scores.append(int(scoreboards[player].score_label.text))
 	total_scores.sort()
 	total_scores.reverse()
 
-	for player in range(4):
+	for player in range(GameConfig.player_count):
 		var my_score: int = int(scoreboards[player].score_label.text)
 		var rank := 0
 		for other_score in total_scores:
