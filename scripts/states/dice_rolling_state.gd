@@ -79,18 +79,18 @@ func _add_die_after_delay(die: Die, t: int) -> void:
 
 
 func _stop_rolling() -> void:
+	for die in ps.dice_box.dice:
+		die.currently_rolling = false
+	if GameConfig.online_mode:
+		ps.dice_rolled.emit(ps.dice_box.dice.map(
+			func(d: Die): return {"value": d.value, "is_wild": d.is_wild}
+		))
+
 	# Stagger each die's stop animation in parallel, then switch state.
 	_pending = ps.dice_box.dice.size()
 	for t in range(ps.dice_box.dice.size()):
 		_stop_die_after_delay(ps.dice_box.dice[t], t)
 	await _all_settled
-
-	# Broadcast roll result to opponent.
-	if GameConfig.online_mode:
-		var dice_data: Array = ps.dice_box.dice.map(
-			func(d: Die): return {"value": d.value, "is_wild": d.is_wild}
-		)
-		ps.dice_rolled.emit(dice_data)
 
 	GameSystem.events.handle(
 		GameEvent.switch_state(GameSystem.events.planning_state)

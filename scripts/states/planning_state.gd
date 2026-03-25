@@ -133,6 +133,8 @@ func _handle_movements_confirmed() -> void:
 	if movements_confirming:
 		return
 	movements_confirming = true
+	if GameConfig.online_mode and ps.current_player == GameConfig.local_player_index:
+		ps.turn_ended.emit(_build_planning_snapshot())
 	var mountain_resolving_wait: float = 0.0
 	ps.dice_box.unreserve_all()
 
@@ -145,9 +147,6 @@ func _handle_movements_confirmed() -> void:
 	await get_tree().create_timer(bonus_wait).timeout
 	ps.check_for_game_end()
 	ps.update_ranks()
-	# Emit turn_ended before advancing player (current_player still identifies the active player).
-	if GameConfig.online_mode:
-		ps.turn_ended.emit(_build_planning_snapshot())
 	ps.next_player()
 
 

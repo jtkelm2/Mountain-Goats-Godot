@@ -73,7 +73,9 @@ func _show_gameover_overlay() -> void:
 	# Ranked player list
 	for i in range(player_scores.size()):
 		var entry: Dictionary = player_scores[i]
-		var type_str := "Human" if entry.is_human else "AI"
+		var p_type: int = GameConfig.player_types[entry.player]
+		var type_str := "Human" if p_type == GameSystem.PlayerType.HUMAN \
+			else ("Online" if p_type == GameSystem.PlayerType.REMOTE else "AI")
 		var row_text := "%d. Player %d (%s) — %d pts" % [
 			i + 1, entry.player + 1, type_str, entry.score
 		]
