@@ -18,3 +18,5 @@ mono_crash.*.json
 
 .claude/
 CLAUDE.md
+.vscode
+*.uid
