@@ -6,14 +6,16 @@ enum Type {
 	MOUSE_DOWN, MOUSE_UP, MOUSE_OVER, MOUSE_OUT, MOUSE_WHEEL,
 	DRAGGER_DROPPED, MOUSE_CLICKED, MOVEMENTS_CONFIRMED,
 	SWITCH_STATE,
-	AI_CAST_WILD, AI_PLACE_DIE, AI_ADVANCE_GOAT,
+	CAST_WILD, PLACE_DIE, ADVANCE_GOAT,
+	REMOTE_ROLL, REMOTE_PLANNING, REMOTE_CONFIRMED,
 }
 
 var type: Type
 var object = null        # The game object involved (Sprite2D)
 var gamestate_ref = null # For SWITCH_STATE
-var die_ref = null       # For AI die events
+var die_ref = null       # For die placement events
 var int_value: int = 0   # Generic int (wheel delta, slot, mountain, wild value)
+var data = null          # Payload for remote events (Array or Dictionary)
 
 # ---- Static factory methods ----
 
@@ -64,23 +66,23 @@ static func switch_state(gs) -> GameEvent:
 	e.gamestate_ref = gs
 	return e
 
-static func ai_cast_wild(die, val: int) -> GameEvent:
+static func cast_wild(die, val: int) -> GameEvent:
 	var e := GameEvent.new()
-	e.type = Type.AI_CAST_WILD
+	e.type = Type.CAST_WILD
 	e.die_ref = die
 	e.int_value = val
 	return e
 
-static func ai_place_die(die, slot: int) -> GameEvent:
+static func place_die(die, slot: int) -> GameEvent:
 	var e := GameEvent.new()
-	e.type = Type.AI_PLACE_DIE
+	e.type = Type.PLACE_DIE
 	e.die_ref = die
 	e.int_value = slot
 	return e
 
-static func ai_advance_goat(mountain: int) -> GameEvent:
+static func advance_goat(mountain: int) -> GameEvent:
 	var e := GameEvent.new()
-	e.type = Type.AI_ADVANCE_GOAT
+	e.type = Type.ADVANCE_GOAT
 	e.int_value = mountain
 	return e
 
@@ -88,4 +90,22 @@ static func dragger_dropped(obj) -> GameEvent:
 	var e := GameEvent.new()
 	e.type = Type.DRAGGER_DROPPED
 	e.object = obj
+	return e
+
+static func remote_roll(dice_data: Array) -> GameEvent:
+	var e := GameEvent.new()
+	e.type = Type.REMOTE_ROLL
+	e.data = dice_data
+	return e
+
+static func remote_planning(snapshot: Dictionary) -> GameEvent:
+	var e := GameEvent.new()
+	e.type = Type.REMOTE_PLANNING
+	e.data = snapshot
+	return e
+
+static func remote_confirmed(final_state: Dictionary) -> GameEvent:
+	var e := GameEvent.new()
+	e.type = Type.REMOTE_CONFIRMED
+	e.data = final_state
 	return e

@@ -13,7 +13,7 @@ enum PlayerType { HUMAN, AI, REMOTE }
 
 class Player:
 	var type: int
-	var ai = null  # AIManager or null
+	var controller = null  # AIManager, RemoteManager, or null (human)
 
 
 func init_system(play_state) -> void:
@@ -29,19 +29,26 @@ func init_system(play_state) -> void:
 	ps.add_child(mouse_mgr)
 	events = Events.new(ps)
 
-	_init_ai(ps)
+	_init_players(ps)
 
 
-func _init_ai(play_state) -> void:
+func _init_players(play_state) -> void:
 	var AIManagerScript = load("res://scripts/ai/ai_manager.gd")
 	var AILabScript = load("res://scripts/ai/ai_lab.gd")
+	var RemoteManagerScript = load("res://scripts/net/remote_manager.gd")
 	players = []
 
 	for i in range(GameConfig.player_count):
 		var p := Player.new()
 		p.type = GameConfig.player_types[i]
-		if p.type == PlayerType.AI:
-			p.ai = AIManagerScript.new(play_state, _callable_for_difficulty(AILabScript, GameConfig.ai_difficulties[i]))
+		match p.type:
+			PlayerType.AI:
+				p.controller = AIManagerScript.new(
+					play_state,
+					_callable_for_difficulty(AILabScript, GameConfig.ai_difficulties[i])
+				)
+			PlayerType.REMOTE:
+				p.controller = RemoteManagerScript.new()
 		players.append(p)
 
 
@@ -55,7 +62,7 @@ func _callable_for_difficulty(AILabScript, difficulty: int) -> Callable:
 			return AILabScript.handcraft_score_ai()
 
 
-func prompt_ai(gamestate) -> void:
+func prompt_player(gamestate) -> void:
 	var player_info: Player = players[ps.current_player]
-	if player_info.type == PlayerType.AI:
-		player_info.ai.on_prompt(gamestate)
+	if player_info.controller != null:
+		player_info.controller.on_prompt(gamestate)

@@ -26,21 +26,19 @@ func refresh():
 	movements_confirming = false
 	first_move_made = false
 	GameSystem.mouse_mgr.set_active([Reg.TAG_GOAT, Reg.TAG_DIE, Reg.TAG_TOKEN])
-
-	if GameConfig.online_mode and ps.current_player != GameConfig.local_player_index:
-		# Spectator mode: receive opponent's planning updates.
-		ps.remote_planning_received.connect(_apply_remote_planning)
-		ps.remote_turn_confirmed.connect(_on_remote_turn_confirmed, CONNECT_ONE_SHOT)
-
 	return self
 
 
 func handle(event) -> void:
-	# During online mode, ignore all input when it is not the local player's turn.
-	if GameConfig.online_mode and ps.current_player != GameConfig.local_player_index:
-		if event.type == GameEvent.Type.SWITCH_STATE:
-			_disconnect_remote_signals()
-			GameSystem.events.switch_state(event.gamestate_ref)
+	# Remote player's turn: only process network-injected events; ignore all input.
+	if GameSystem.players[ps.current_player].type == GameSystem.PlayerType.REMOTE:
+		match event.type:
+			GameEvent.Type.REMOTE_PLANNING:
+				_apply_remote_planning(event.data)
+			GameEvent.Type.REMOTE_CONFIRMED:
+				_apply_remote_confirmed(event.data)
+			GameEvent.Type.SWITCH_STATE:
+				GameSystem.events.switch_state(event.gamestate_ref)
 		return
 
 	match event.type:
@@ -61,18 +59,18 @@ func handle(event) -> void:
 		GameEvent.Type.SWITCH_STATE:
 			GameSystem.events.switch_state(event.gamestate_ref)
 
-		GameEvent.Type.AI_CAST_WILD:
+		GameEvent.Type.CAST_WILD:
 			var die = event.die_ref
 			var target_val: int = event.int_value
 			var delta: int = target_val - die.value
 			if delta != 0:
 				die.change_wild(delta, ps.dice_box)
 
-		GameEvent.Type.AI_PLACE_DIE:
+		GameEvent.Type.PLACE_DIE:
 			GameSystem.mouse_mgr.set_active([])
 			await ps.dice_box.to_slot(event.int_value, event.die_ref)
 
-		GameEvent.Type.AI_ADVANCE_GOAT:
+		GameEvent.Type.ADVANCE_GOAT:
 			_check_first_move()
 			movements[event.int_value] += 1
 			_judge_movements()
@@ -133,7 +131,8 @@ func _handle_movements_confirmed() -> void:
 	if movements_confirming:
 		return
 	movements_confirming = true
-	if GameConfig.online_mode and ps.current_player == GameConfig.local_player_index:
+	# Emit before any await so both players start resolution animations simultaneously.
+	if GameSystem.players[ps.current_player].type != GameSystem.PlayerType.REMOTE:
 		ps.turn_ended.emit(_build_planning_snapshot())
 	var mountain_resolving_wait: float = 0.0
 	ps.dice_box.unreserve_all()
@@ -176,9 +175,8 @@ func _judge_movements() -> void:
 		else:
 			_cancel_drop(goat)
 
-	# Broadcast planning state to opponent.
-	if GameConfig.online_mode and ps.current_player == GameConfig.local_player_index:
-		ps.planning_updated.emit(_build_planning_snapshot())
+	# Broadcast planning state to opponent (NetworkReplicator guards sending by player type).
+	ps.planning_updated.emit(_build_planning_snapshot())
 
 
 func _cancel_drop(goat: Goat) -> void:
@@ -228,8 +226,7 @@ func _award_bonus_tokens(quantity: int) -> float:
 
 func _check_first_move() -> void:
 	if not first_move_made:
-		# Don't show the confirm button when spectating an opponent's turn.
-		if not (GameConfig.online_mode and ps.current_player != GameConfig.local_player_index):
+		if GameSystem.players[ps.current_player].type != GameSystem.PlayerType.REMOTE:
 			ps.move_confirm_button.fade_in()
 		first_move_made = true
 
@@ -245,11 +242,6 @@ func _build_planning_snapshot() -> Dictionary:
 		}),
 		"movements": movements.duplicate()
 	}
-
-
-func _disconnect_remote_signals() -> void:
-	if ps.remote_planning_received.is_connected(_apply_remote_planning):
-		ps.remote_planning_received.disconnect(_apply_remote_planning)
 
 
 func _apply_remote_planning(snapshot: Dictionary) -> void:
@@ -276,9 +268,8 @@ func _apply_remote_planning(snapshot: Dictionary) -> void:
 	_judge_movements()
 
 
-func _on_remote_turn_confirmed(final_state: Dictionary) -> void:
-	_disconnect_remote_signals()
+func _apply_remote_confirmed(data: Dictionary) -> void:
 	# Sync to the authoritative final planning state before resolving.
-	if not final_state.is_empty():
-		_apply_remote_planning(final_state)
+	if not data.is_empty():
+		_apply_remote_planning(data)
 	_handle_movements_confirmed()

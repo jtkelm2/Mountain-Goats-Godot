@@ -22,15 +22,18 @@ var _online_status_label: Label = null
 var _room_code_label: Label = null
 var _join_code_input: LineEdit = null
 var _online_start_btn: Button = null
-var _online_state: String = ""  # "host_waiting", "join_waiting", "connected"
+var _is_hosting: bool = false
+var _matchmaker = null  # OnlineMatchmaker
 
 
 func _ready() -> void:
 	_build_ui()
 	_refresh_player_rows()
-	NetworkManager.room_created.connect(_on_room_created)
-	NetworkManager.opponent_connected.connect(_on_opponent_connected)
-	NetworkManager.message_received.connect(_on_network_message)
+	_matchmaker = load("res://scripts/net/online_matchmaker.gd").new()
+	add_child(_matchmaker)
+	_matchmaker.room_created.connect(_on_room_created)
+	_matchmaker.opponent_connected.connect(_on_opponent_connected)
+	_matchmaker.opponent_ready_to_start.connect(_on_opponent_ready_to_start)
 
 
 func _build_ui() -> void:
@@ -329,28 +332,24 @@ func _build_online_section(parent: Control) -> void:
 
 
 func _on_host_pressed() -> void:
+	_is_hosting = true
 	_online_section.visible = true
 	_online_status_label.text = "Connecting to relay server…"
 	_room_code_label.text = ""
 	_online_start_btn.visible = false
-	_online_state = "host_waiting"
-	NetworkManager.connect_to_server()
-	await get_tree().create_timer(1.0).timeout
-	NetworkManager.create_room()
+	_matchmaker.host()
 
 
 func _on_join_pressed() -> void:
 	var code := _join_code_input.text.strip_edges().to_upper()
 	if code.is_empty():
 		return
+	_is_hosting = false
 	_online_section.visible = true
 	_online_status_label.text = "Connecting…"
 	_room_code_label.text = ""
 	_online_start_btn.visible = false
-	_online_state = "join_waiting"
-	NetworkManager.connect_to_server()
-	await get_tree().create_timer(1.0).timeout
-	NetworkManager.join_room(code)
+	_matchmaker.join(code)
 
 
 func _on_room_created(code: String) -> void:
@@ -359,30 +358,29 @@ func _on_room_created(code: String) -> void:
 
 
 func _on_opponent_connected() -> void:
-	if _online_state == "host_waiting":
+	if _is_hosting:
 		_online_status_label.text = "Opponent connected!"
 		_online_start_btn.visible = true
-	elif _online_state == "join_waiting":
+	else:
 		_online_status_label.text = "Connected! Waiting for host to start…"
 
 
-func _on_network_message(data: Dictionary) -> void:
-	if data.get("type") == "game_start" and _online_state == "join_waiting":
-		# Host sent game config — apply it and enter the game as joiner.
-		GameConfig.online_mode = true
-		GameConfig.is_host = false
-		GameConfig.local_player_index = 1
-		GameConfig.player_count = 2
-		GameConfig.player_types[0] = GameSystem.PlayerType.REMOTE
-		GameConfig.player_types[1] = GameSystem.PlayerType.HUMAN
-		GameConfig.ai_difficulties[0] = -1
-		GameConfig.ai_difficulties[1] = -1
-		get_tree().change_scene_to_file("res://scenes/main.tscn")
+func _on_opponent_ready_to_start() -> void:
+	# Joiner: host has started the game — enter as player 1 (remote = player 0).
+	GameConfig.online_mode = true
+	GameConfig.is_host = false
+	GameConfig.local_player_index = 1
+	GameConfig.player_count = 2
+	GameConfig.player_types[0] = GameSystem.PlayerType.REMOTE
+	GameConfig.player_types[1] = GameSystem.PlayerType.HUMAN
+	GameConfig.ai_difficulties[0] = -1
+	GameConfig.ai_difficulties[1] = -1
+	get_tree().change_scene_to_file("res://scenes/main.tscn")
 
 
 func _on_online_start_pressed() -> void:
-	# Host sends game_start to the joiner, then enters the game.
-	NetworkManager.send({"type": "game_start"})
+	# Host: notify joiner then enter as player 0 (remote = player 1).
+	_matchmaker.start_match()
 	GameConfig.online_mode = true
 	GameConfig.is_host = true
 	GameConfig.local_player_index = 0

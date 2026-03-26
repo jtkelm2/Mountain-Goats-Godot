@@ -53,7 +53,7 @@ func next() -> void:
 
 
 ## Switch the active gamestate.
-func switch_state(next_gs, prompt_ai: bool = false) -> void:
+func switch_state(next_gs, prompt_player: bool = false) -> void:
 	_current_gamestate = next_gs.refresh()
-	if prompt_ai:
-		GameSystem.prompt_ai(_current_gamestate)
+	if prompt_player:
+		GameSystem.prompt_player(_current_gamestate)

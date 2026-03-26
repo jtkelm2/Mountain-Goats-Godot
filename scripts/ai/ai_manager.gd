@@ -26,21 +26,21 @@ func _execute_raw_response(response: Dictionary) -> void:
 
 	for i in range(response.wilds.size()):
 		GameSystem.events.queue(
-			GameEvent.ai_cast_wild(one_dice[i], response.wilds[i])
+			GameEvent.cast_wild(one_dice[i], response.wilds[i])
 		)
 
 	for slot_idx in range(4):
 		for die_num in response.move_with_mold.mold[slot_idx]:
 			var die = ps.dice_box.dice[die_num]
 			GameSystem.events.queue(
-				GameEvent.ai_place_die(die, slot_idx)
+				GameEvent.place_die(die, slot_idx)
 			)
 
 	var move_arr: Array = response.move_with_mold.move
 	for val in move_arr:
 		if val != 0:
 			GameSystem.events.queue(
-				GameEvent.ai_advance_goat(val)
+				GameEvent.advance_goat(val)
 			)
 
 

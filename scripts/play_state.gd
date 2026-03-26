@@ -7,10 +7,8 @@ extends Node2D
 signal dice_rolled(dice_data: Array)
 signal planning_updated(snapshot: Dictionary)
 signal turn_ended(final_state: Dictionary)
-# Inbound (relay server → NetworkReplicator → game states)
-signal remote_roll_received(dice_data: Array)
-signal remote_planning_received(snapshot: Dictionary)
-signal remote_turn_confirmed(final_state: Dictionary)
+# Inbound events arrive as GameEvents queued by NetworkReplicator (REMOTE_ROLL,
+# REMOTE_PLANNING, REMOTE_CONFIRMED) — no PlayState signals needed for inbound.
 signal opponent_disconnected()
 
 var current_player: int = 0

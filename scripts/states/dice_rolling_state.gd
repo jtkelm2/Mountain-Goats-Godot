@@ -31,9 +31,8 @@ func _init(play_state) -> void:
 func refresh():
 	GameSystem.mouse_mgr.set_active([])
 	pause_input = true
-	if GameConfig.online_mode and ps.current_player != GameConfig.local_player_index:
-		# Opponent's turn: skip rolling animation, wait for their roll result.
-		ps.remote_roll_received.connect(_on_remote_roll_received, CONNECT_ONE_SHOT)
+	if GameSystem.players[ps.current_player].type == GameSystem.PlayerType.REMOTE:
+		# Remote's turn: wait for a REMOTE_ROLL GameEvent injected by NetworkReplicator.
 		return self
 	_tray_in()
 	_start_rolling_after_delay()
@@ -46,6 +45,8 @@ func handle(event) -> void:
 			if not pause_input:
 				_stop_rolling()
 				pause_input = true
+		GameEvent.Type.REMOTE_ROLL:
+			_apply_remote_roll(event.data)
 		GameEvent.Type.SWITCH_STATE:
 			GameSystem.events.switch_state(event.gamestate_ref, true)
 
@@ -67,7 +68,7 @@ func _start_rolling() -> void:
 	await _all_settled
 
 	pause_input = false
-	GameSystem.prompt_ai(self)
+	GameSystem.prompt_player(self)
 
 
 func _add_die_after_delay(die: Die, t: int) -> void:
@@ -81,10 +82,9 @@ func _add_die_after_delay(die: Die, t: int) -> void:
 func _stop_rolling() -> void:
 	for die in ps.dice_box.dice:
 		die.currently_rolling = false
-	if GameConfig.online_mode:
-		ps.dice_rolled.emit(ps.dice_box.dice.map(
-			func(d: Die): return {"value": d.value, "is_wild": d.is_wild}
-		))
+	ps.dice_rolled.emit(ps.dice_box.dice.map(
+		func(d: Die): return {"value": d.value, "is_wild": d.is_wild}
+	))
 
 	# Stagger each die's stop animation in parallel, then switch state.
 	_pending = ps.dice_box.dice.size()
@@ -98,7 +98,7 @@ func _stop_rolling() -> void:
 	_tray_out()
 
 
-func _on_remote_roll_received(dice_data: Array) -> void:
+func _apply_remote_roll(dice_data: Array) -> void:
 	# Apply opponent's roll result and enter planning as spectator.
 	for i in range(mini(dice_data.size(), ps.dice_box.dice.size())):
 		var d: Die = ps.dice_box.dice[i]
